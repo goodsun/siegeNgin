@@ -1,4 +1,5 @@
 require("@nomiclabs/hardhat-waffle");
+require("@nomiclabs/hardhat-etherscan");
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -36,10 +37,19 @@ module.exports = {
       url: "http://127.0.0.1:8545",
       gas: 30000000, // 30M gas limit
       blockGasLimit: 30000000
+    },
+    "polygon-amoy": {
+      url: "https://rpc-amoy.polygon.technology/",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : []
     }
   },
   gasReporter: {
     enabled: true,
     currency: 'USD'
+  },
+  etherscan: {
+    apiKey: {
+      polygonAmoy: process.env.POLYGONSCAN_API_KEY || ""
+    }
   }
 };

@@ -55,7 +55,7 @@ contract CatComposer {
 
         // Build SVG in parts to avoid stack too deep
         bytes memory part1 = abi.encodePacked(
-            '<svg viewBox="0 0 24 24" width="384" height="384" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">',
+            '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">',
             '<defs><filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">',
             '<feGaussianBlur in="SourceAlpha" stdDeviation="0.24"/>',
             '<feOffset dx="0.12" dy="0.12" result="offsetblur"/>',

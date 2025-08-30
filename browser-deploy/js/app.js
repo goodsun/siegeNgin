@@ -1395,47 +1395,61 @@ function formatBase64JsonResult(dataUri) {
     const base64 = dataUri.replace("data:application/json;base64,", "");
     const jsonStr = atob(base64);
     const metadata = JSON.parse(jsonStr);
-    
+
     let html = '<div class="space-y-2">';
-    
+
     // Check if it's NFT metadata
     if (metadata.name && metadata.image) {
       html += `<div class="font-semibold">${metadata.name}</div>`;
-      
+
       if (metadata.description) {
         html += `<div class="text-sm text-gray-600">${metadata.description}</div>`;
       }
-      
+
       // Display image if it's SVG
-      if (metadata.image && metadata.image.startsWith("data:image/svg+xml;base64,")) {
-        const svgBase64 = metadata.image.replace("data:image/svg+xml;base64,", "");
+      if (
+        metadata.image &&
+        metadata.image.startsWith("data:image/svg+xml;base64,")
+      ) {
+        const svgBase64 = metadata.image.replace(
+          "data:image/svg+xml;base64,",
+          ""
+        );
         const svg = atob(svgBase64);
         html += `<div class="mt-2 p-2 bg-gray-100 rounded">
-          <div style="width: 200px; height: 200px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+          <div style="width: 350px; height: 350px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
             <img src="${metadata.image}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
           </div>
         </div>`;
       }
-      
+
       // Display attributes
       if (metadata.attributes && metadata.attributes.length > 0) {
-        html += '<div class="mt-2"><div class="text-sm font-semibold">Attributes:</div>';
+        html +=
+          '<div class="mt-2"><div class="text-sm font-semibold">Attributes:</div>';
         html += '<div class="grid grid-cols-2 gap-1 text-sm mt-1">';
-        metadata.attributes.forEach(attr => {
+        metadata.attributes.forEach((attr) => {
           html += `<div><span class="text-gray-600">${attr.trait_type}:</span> ${attr.value}</div>`;
         });
-        html += '</div></div>';
+        html += "</div></div>";
       }
     } else {
       // Generic JSON display
-      html += `<pre class="text-xs overflow-auto bg-gray-100 p-2 rounded">${JSON.stringify(metadata, null, 2)}</pre>`;
+      html += `<pre class="text-xs overflow-auto bg-gray-100 p-2 rounded">${JSON.stringify(
+        metadata,
+        null,
+        2
+      )}</pre>`;
     }
-    
-    html += '</div>';
+
+    html += "</div>";
     return html;
   } catch (error) {
     console.error("Failed to decode base64 JSON:", error);
-    return `<span class="text-xs text-gray-500">${dataUri.substring(0, 50)}...</span>`;
+    return `<span class="text-xs text-gray-500">${dataUri.substring(
+      0,
+      50
+    )}...</span>`;
   }
 }
 
@@ -1443,15 +1457,18 @@ function formatBase64SvgResult(dataUri) {
   try {
     const base64 = dataUri.replace("data:image/svg+xml;base64,", "");
     const svg = atob(base64);
-    
+
     return `<div class="p-2 bg-gray-100 rounded">
-      <div style="width: 200px; height: 200px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+      <div style="width: 350px; height: 350px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
         <img src="${dataUri}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
       </div>
     </div>`;
   } catch (error) {
     console.error("Failed to decode base64 SVG:", error);
-    return `<span class="text-xs text-gray-500">${dataUri.substring(0, 50)}...</span>`;
+    return `<span class="text-xs text-gray-500">${dataUri.substring(
+      0,
+      50
+    )}...</span>`;
   }
 }
 
@@ -1464,7 +1481,7 @@ function formatResult(result) {
   } else if (typeof result === "object") {
     return JSON.stringify(result, null, 2);
   }
-  
+
   // Check for base64 encoded data
   const resultStr = result.toString();
   if (resultStr.startsWith("data:application/json;base64,")) {
@@ -1472,7 +1489,7 @@ function formatResult(result) {
   } else if (resultStr.startsWith("data:image/svg+xml;base64,")) {
     return formatBase64SvgResult(resultStr);
   }
-  
+
   return resultStr;
 }
 
@@ -1689,7 +1706,11 @@ window.removeSharedContract = removeSharedContract;
 // Function to remove a deployed contract from history
 async function removeDeployedContract(contractName) {
   try {
-    if (!confirm(`Remove ${contractName} from deployment history?\n\nThis will allow you to redeploy this contract.`)) {
+    if (
+      !confirm(
+        `Remove ${contractName} from deployment history?\n\nThis will allow you to redeploy this contract.`
+      )
+    ) {
       return;
     }
 
@@ -1707,34 +1728,40 @@ async function removeDeployedContract(contractName) {
     const projectName = document.getElementById("projectSelect").value;
     if (projectName) {
       const storageKey = `deployedContracts_${projectName}`;
-      localStorage.setItem(storageKey, JSON.stringify(window.deployedContracts));
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify(window.deployedContracts)
+      );
     }
 
     // Get network ID
-    let networkId = 'unknown';
+    let networkId = "unknown";
     if (provider) {
       try {
         const network = await provider.getNetwork();
         networkId = network.chainId;
       } catch (e) {
-        console.error('Failed to get network ID:', e);
+        console.error("Failed to get network ID:", e);
       }
     }
 
     // Update server-side deployed-addresses file
-    const response = await fetch(`/api/projects/${projectName}/save-deployed-addresses`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        networkId: networkId,
-        addresses: window.deployedContracts
-      })
-    });
+    const response = await fetch(
+      `/api/projects/${projectName}/save-deployed-addresses`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          networkId: networkId,
+          addresses: window.deployedContracts,
+        }),
+      }
+    );
 
     if (!response.ok) {
-      throw new Error('Failed to update deployed addresses on server');
+      throw new Error("Failed to update deployed addresses on server");
     }
 
     // Re-render deployment steps
@@ -1866,13 +1893,13 @@ async function checkDeployedAddresses() {
     if (!projectName) return;
 
     // Get network ID
-    let networkId = 'unknown';
+    let networkId = "unknown";
     if (provider) {
       try {
         const network = await provider.getNetwork();
         networkId = network.chainId;
       } catch (e) {
-        console.error('Failed to get network ID:', e);
+        console.error("Failed to get network ID:", e);
       }
     }
 
@@ -1905,8 +1932,8 @@ async function checkDeployedAddresses() {
                   6
                 )}...${address.slice(-4)}</span>
                 <button onclick="copyAddress('${address}')" class="text-blue-500 hover:text-blue-700" title="Copy address">📋</button>
-                <button onclick="removeDeployedContract('${name}')" 
-                        class="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 text-lg leading-none px-1" 
+                <button onclick="removeDeployedContract('${name}')"
+                        class="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 text-lg leading-none px-1"
                         title="Remove ${name} from deployment history">
                   ×
                 </button>
@@ -2511,13 +2538,13 @@ async function saveDeployedAddressIncremental(contractName, address) {
     const projectName = document.getElementById("projectSelect").value;
 
     // Get network ID
-    let networkId = 'unknown';
+    let networkId = "unknown";
     if (provider) {
       try {
         const network = await provider.getNetwork();
         networkId = network.chainId;
       } catch (e) {
-        console.error('Failed to get network ID:', e);
+        console.error("Failed to get network ID:", e);
       }
     }
 
@@ -2536,7 +2563,7 @@ async function saveDeployedAddressIncremental(contractName, address) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           networkId: networkId,
-          addresses: deployedAddresses
+          addresses: deployedAddresses,
         }),
       }
     );
@@ -2767,8 +2794,10 @@ function getPlaceholderForType(type) {
   if (type.includes("string")) return "Enter text";
   if (type.includes("bytes32")) return "0x... (64 hex chars)";
   if (type.includes("bytes")) return "0x...";
-  if (type.startsWith("tuple[]")) return '[["value1", value2, ...], ["value1", value2, ...]] or [{"field1": "value1", ...}, {...}]';
-  if (type.startsWith("tuple")) return '["value1", value2, ...] or {"field1": "value1", "field2": value2, ...}';
+  if (type.startsWith("tuple[]"))
+    return '[["value1", value2, ...], ["value1", value2, ...]] or [{"field1": "value1", ...}, {...}]';
+  if (type.startsWith("tuple"))
+    return '["value1", value2, ...] or {"field1": "value1", "field2": value2, ...}';
   if (type.includes("[]")) return "[value1, value2, ...]";
   return `Enter ${type}`;
 }
@@ -2788,19 +2817,19 @@ function parseParameterValue(value, type) {
     try {
       // Try parsing as JSON first
       const parsed = JSON.parse(value);
-      
+
       // If it's a tuple array
       if (type.includes("[]")) {
         if (!Array.isArray(parsed)) {
           throw new Error("Tuple array must be an array");
         }
-        
+
         // For tuple[], we need to convert objects to arrays
-        return parsed.map(item => {
+        return parsed.map((item) => {
           if (Array.isArray(item)) {
             // Already in array format
             return item;
-          } else if (typeof item === 'object' && item !== null) {
+          } else if (typeof item === "object" && item !== null) {
             // Convert object to array based on property order
             // This assumes properties are in the correct order
             return Object.values(item);
@@ -2811,7 +2840,7 @@ function parseParameterValue(value, type) {
         // Single tuple
         if (Array.isArray(parsed)) {
           return parsed;
-        } else if (typeof parsed === 'object' && parsed !== null) {
+        } else if (typeof parsed === "object" && parsed !== null) {
           // Convert object to array
           return Object.values(parsed);
         }
@@ -2820,9 +2849,13 @@ function parseParameterValue(value, type) {
       console.error("Failed to parse tuple:", e);
       // If JSON parse fails, try to parse as comma-separated for simple tuples
       if (!type.includes("[]") && value.includes(",")) {
-        return value.split(",").map(v => v.trim());
+        return value.split(",").map((v) => v.trim());
       }
-      throw new Error(`Invalid tuple format. Please use JSON format: ${type.includes("[]") ? '[{...}, {...}]' : '{...} or [...]'}`);
+      throw new Error(
+        `Invalid tuple format. Please use JSON format: ${
+          type.includes("[]") ? "[{...}, {...}]" : "{...} or [...]"
+        }`
+      );
     }
   }
 
@@ -3256,19 +3289,19 @@ function createInterfaceFunctionUI(func, type) {
   if (func.stateMutability === "payable" && type === "write") {
     const ethDiv = document.createElement("div");
     ethDiv.className = "mb-2 border-t pt-2 mt-2";
-    
+
     const ethLabel = document.createElement("label");
     ethLabel.className = "block text-sm font-medium mb-1 text-blue-600";
     ethLabel.textContent = "ETH Value to Send (in ETH)";
     ethDiv.appendChild(ethLabel);
-    
+
     const ethInput = document.createElement("input");
     ethInput.type = "text";
     ethInput.id = `interface-${func.name}-eth-value`;
     ethInput.className = "w-full border rounded px-3 py-2 text-sm";
     ethInput.placeholder = "0.0";
     ethDiv.appendChild(ethInput);
-    
+
     div.appendChild(ethDiv);
   }
 
@@ -3348,13 +3381,15 @@ async function executeInterfaceFunction(func, type) {
 
       resultDiv.innerHTML =
         '<span class="text-gray-500">Sending transaction...</span>';
-      
+
       // Prepare transaction options
       let txOptions = {};
-      
+
       // Add ETH value for payable functions
       if (func.stateMutability === "payable") {
-        const ethValueInput = document.getElementById(`interface-${func.name}-eth-value`);
+        const ethValueInput = document.getElementById(
+          `interface-${func.name}-eth-value`
+        );
         if (ethValueInput && ethValueInput.value) {
           try {
             txOptions.value = ethers.utils.parseEther(ethValueInput.value);
@@ -3364,15 +3399,17 @@ async function executeInterfaceFunction(func, type) {
           }
         }
       }
-      
+
       // For functions that might need high gas (like mint), use manual gas limit
-      if (func.name.toLowerCase().includes('mint') || 
-          func.name.toLowerCase().includes('create') ||
-          func.name.toLowerCase().includes('deploy')) {
+      if (
+        func.name.toLowerCase().includes("mint") ||
+        func.name.toLowerCase().includes("create") ||
+        func.name.toLowerCase().includes("deploy")
+      ) {
         // Use high gas limit for mint/create operations with on-chain data
         txOptions.gasLimit = 10000000; // 10M gas
       }
-      
+
       const tx = await contractWithSigner[func.name](...params, txOptions);
 
       resultDiv.innerHTML = `<span class="text-blue-500">Transaction sent: ${tx.hash.substring(
@@ -3391,7 +3428,7 @@ async function executeInterfaceFunction(func, type) {
 
     // Log full error for debugging
     console.error("Full error object:", error);
-    
+
     // Check if there's nested error data
     if (error.data) {
       console.error("Error data:", error.data);
@@ -3449,21 +3486,24 @@ async function executeInterfaceFunction(func, type) {
       } else {
         errorMessage = "Cannot estimate gas. The transaction may fail.";
       }
-      
+
       // If it's a view function, suggest checking contract state
       if (functionType === "read") {
-        errorMessage += " This might indicate the contract is not properly initialized or the function requirements are not met.";
+        errorMessage +=
+          " This might indicate the contract is not properly initialized or the function requirements are not met.";
       }
-      
+
       // Show error data if available
       if (error.error && error.error.data && error.error.data.data) {
         const errorData = error.error.data.data;
         errorMessage += ` (Error: ${errorData})`;
-        
+
         // Try to decode common error signatures
         if (errorData === "0x3d6c2500") {
-          errorMessage += " - This error might indicate: insufficient mint fee, max supply reached, or metadata bank not set.";
-          errorMessage += " Check the contract's mintFee, totalMinted/maxSupply, and metadataBank values.";
+          errorMessage +=
+            " - This error might indicate: insufficient mint fee, max supply reached, or metadata bank not set.";
+          errorMessage +=
+            " Check the contract's mintFee, totalMinted/maxSupply, and metadataBank values.";
         }
       }
     } else if (error.code === "ACTION_REJECTED") {
