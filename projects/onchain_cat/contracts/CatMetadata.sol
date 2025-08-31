@@ -13,7 +13,14 @@ contract CatMetadata is Ownable {
     mapping(uint8 => string) private itemDescriptions;
     mapping(uint8 => string) private frontDescriptions;
 
+    // Customizable contract metadata
+    string public collectionName = "OnchainCats";
+    string public collectionDescription = "OnchainCats is a fully on-chain NFT collection featuring 10,000 unique cats. All 10,000 cats exist from deployment and can be purchased. Each cat is procedurally generated and stored entirely on the blockchain with no external dependencies.";
+    string public externalLink = "https://onchainscats.com";
+    uint256 public sellerFeeBasisPoints = 500; // 5%
+
     event ComposerUpdated(address indexed previousComposer, address indexed newComposer);
+    event ContractURIUpdated();
 
     constructor(address _catComposer) Ownable(msg.sender) {
         require(_catComposer != address(0), "Invalid composer address");
@@ -26,6 +33,43 @@ contract CatMetadata is Ownable {
         address previousComposer = address(catComposer);
         catComposer = CatComposer(_newComposer);
         emit ComposerUpdated(previousComposer, _newComposer);
+    }
+
+    // Contract metadata setters
+    function setCollectionName(string memory _name) external onlyOwner {
+        collectionName = _name;
+        emit ContractURIUpdated();
+    }
+
+    function setCollectionDescription(string memory _description) external onlyOwner {
+        collectionDescription = _description;
+        emit ContractURIUpdated();
+    }
+
+    function setExternalLink(string memory _link) external onlyOwner {
+        externalLink = _link;
+        emit ContractURIUpdated();
+    }
+
+    function setSellerFeeBasisPoints(uint256 _feeBasisPoints) external onlyOwner {
+        require(_feeBasisPoints <= 1000, "Fee cannot exceed 10%");
+        sellerFeeBasisPoints = _feeBasisPoints;
+        emit ContractURIUpdated();
+    }
+
+    // Batch update contract URI metadata
+    function setContractURI(
+        string memory _name,
+        string memory _description,
+        string memory _externalLink,
+        uint256 _sellerFeeBasisPoints
+    ) external onlyOwner {
+        collectionName = _name;
+        collectionDescription = _description;
+        externalLink = _externalLink;
+        require(_sellerFeeBasisPoints <= 1000, "Fee cannot exceed 10%");
+        sellerFeeBasisPoints = _sellerFeeBasisPoints;
+        emit ContractURIUpdated();
     }
 
     function initializeDescriptions() private {
@@ -137,13 +181,13 @@ contract CatMetadata is Ownable {
 
     function contractURI() external view returns (string memory) {
         bytes memory json = abi.encodePacked(
-            '{"name":"OnchainCats",'
-            '"description":"OnchainCats is a fully on-chain NFT collection featuring 10,000 unique cats. All 10,000 cats exist from deployment and can be purchased. Each cat is procedurally generated and stored entirely on the blockchain with no external dependencies.",'
+            '{"name":"', collectionName, '",'
+            '"description":"', collectionDescription, '",'
             '"image":"data:image/svg+xml;base64,',
             Base64.encode(bytes(generateSampleSVG())),
             '",'
-            '"external_link":"https://onchainscats.com",'
-            '"seller_fee_basis_points":500,'
+            '"external_link":"', externalLink, '",'
+            '"seller_fee_basis_points":', toString(sellerFeeBasisPoints), ','
             '"fee_recipient":"',
             toHexString(uint160(owner()), 20),
             '",'
