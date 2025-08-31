@@ -227,6 +227,18 @@ contract OnchainCats is ERC721, ERC721Enumerable, ERC2981, VirtualOwner, IERC490
         emit Purchased(msg.sender, tokenId);
     }
     
+    // Batch mint to virtual owner for OpenSea display
+    function batchMintToOwner(uint256 startId, uint256 endId) external onlyVirtualOwner {
+        require(startId >= 1 && startId <= endId && endId <= TOTAL_SUPPLY, "Invalid range");
+        
+        for (uint256 tokenId = startId; tokenId <= endId; tokenId++) {
+            if (!_minted[tokenId]) {
+                _minted[tokenId] = true;
+                _mint(virtualOwner(), tokenId);
+            }
+        }
+    }
+    
     // ERC-4906 Metadata Update Functions
     function notifyCollectionExists() external onlyVirtualOwner {
         // Emit event to notify that all tokens in the collection exist
