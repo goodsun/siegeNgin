@@ -36,8 +36,6 @@ contract OnchainCats is ERC721A, ERC2981, Ownable, IERC4906 {
         require(isAvailable(tokenId), "Not for sale");
         require(msg.value >= price, "Insufficient payment");
         
-        // Check ownership before transfer
-        require(ownerOf(tokenId) == owner(), "Owner mismatch");
         
         // Transfer from owner to buyer using internal transfer
         _transfer(owner(), msg.sender, tokenId);
@@ -141,8 +139,4 @@ contract OnchainCats is ERC721A, ERC2981, Ownable, IERC4906 {
         return interfaceId == bytes4(0x49064906) || // ERC-4906
                super.supportsInterface(interfaceId);
     }
-}
-
-interface IERC721Receiver {
-    function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) external returns (bytes4);
 }
