@@ -3329,6 +3329,7 @@ async function executeInterfaceFunction(func, type) {
     showMessage("No contract loaded", "error");
     return;
   }
+  const functionType = type; // Define functionType variable
 
   try {
     // Collect parameters
