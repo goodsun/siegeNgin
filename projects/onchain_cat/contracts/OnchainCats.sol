@@ -40,14 +40,14 @@ contract OnchainCats is ERC721A, ERC2981, Ownable, IERC4906 {
         address previousApproval = getApproved(tokenId);
         
         // Temporarily approve this contract
-        _approve(address(this), tokenId, owner());
+        _approve(address(this), tokenId);
         
         // Use the standard transferFrom
         this.transferFrom(owner(), to, tokenId);
         
         // Restore previous approval if it wasn't this contract
         if (previousApproval != address(this) && previousApproval != address(0)) {
-            _approve(previousApproval, tokenId, to);
+            _approve(previousApproval, tokenId);
         }
     }
     
