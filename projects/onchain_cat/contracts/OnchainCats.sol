@@ -7,7 +7,13 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "./VirtualOwner.sol";
 import "./CatMetadata.sol";
 
-contract OnchainCats is ERC721, ERC721Enumerable, ERC2981, VirtualOwner {
+// ERC-4906: EIP-721 Metadata Update Extension
+interface IERC4906 {
+    event MetadataUpdate(uint256 _tokenId);
+    event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
+}
+
+contract OnchainCats is ERC721, ERC721Enumerable, ERC2981, VirtualOwner, IERC4906 {
     CatMetadata public immutable catMetadata;
     
     uint256 public constant TOTAL_SUPPLY = 10000;
@@ -208,6 +214,23 @@ contract OnchainCats is ERC721, ERC721Enumerable, ERC2981, VirtualOwner {
         emit Purchased(msg.sender, tokenId);
     }
     
+    // ERC-4906 Metadata Update Functions
+    function notifyCollectionExists() external onlyVirtualOwner {
+        // Emit event to notify that all tokens in the collection exist
+        emit BatchMetadataUpdate(1, TOTAL_SUPPLY);
+    }
+    
+    function updateMetadata(uint256 tokenId) external onlyVirtualOwner {
+        require(exists(tokenId), "Token does not exist");
+        emit MetadataUpdate(tokenId);
+    }
+    
+    function updateMetadataRange(uint256 fromTokenId, uint256 toTokenId) external onlyVirtualOwner {
+        require(fromTokenId >= 1 && toTokenId <= TOTAL_SUPPLY, "Invalid range");
+        require(fromTokenId <= toTokenId, "Invalid range order");
+        emit BatchMetadataUpdate(fromTokenId, toTokenId);
+    }
+    
     // Required overrides for ERC721Enumerable
     function _update(address to, uint256 tokenId, address auth)
         internal
@@ -230,6 +253,7 @@ contract OnchainCats is ERC721, ERC721Enumerable, ERC2981, VirtualOwner {
         override(ERC721, ERC721Enumerable, ERC2981)
         returns (bool)
     {
-        return super.supportsInterface(interfaceId);
+        return interfaceId == bytes4(0x49064906) || // ERC-4906
+               super.supportsInterface(interfaceId);
     }
 }
