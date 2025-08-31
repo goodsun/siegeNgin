@@ -38,7 +38,7 @@ contract OnchainCats is ERC721, ERC721Enumerable, ERC2981, VirtualOwner, IERC490
     }
     
     function isAvailable(uint256 tokenId) public view returns (bool) {
-        return exists(tokenId) && !_minted[tokenId];
+        return exists(tokenId) && ownerOf(tokenId) == virtualOwner();
     }
     
     function ownerOf(uint256 tokenId) public view override(ERC721, IERC721) returns (address) {
@@ -55,12 +55,16 @@ contract OnchainCats is ERC721, ERC721Enumerable, ERC2981, VirtualOwner, IERC490
     
     function buy(uint256 tokenId) public payable {
         require(exists(tokenId), "Token does not exist");
-        require(!_minted[tokenId], "Already sold");
+        require(isAvailable(tokenId), "Not for sale");
         require(msg.value >= price, "Insufficient payment");
         
-        // Mint the NFT to the buyer
-        _minted[tokenId] = true;
-        _mint(msg.sender, tokenId);
+        // Transfer if already minted, mint if not
+        if (_minted[tokenId]) {
+            _transfer(virtualOwner(), msg.sender, tokenId);
+        } else {
+            _minted[tokenId] = true;
+            _mint(msg.sender, tokenId);
+        }
         
         // Refund excess payment
         if (msg.value > price) {
@@ -76,11 +80,15 @@ contract OnchainCats is ERC721, ERC721Enumerable, ERC2981, VirtualOwner, IERC490
         
         for (uint256 i = 0; i < tokenIds.length; i++) {
             uint256 tokenId = tokenIds[i];
-            require(exists(tokenId), "Token does not exist");
-            require(!_minted[tokenId], "Token already sold");
+            require(isAvailable(tokenId), "Not for sale");
             
-            _minted[tokenId] = true;
-            _mint(msg.sender, tokenId);
+            // Transfer if already minted, mint if not
+            if (_minted[tokenId]) {
+                _transfer(virtualOwner(), msg.sender, tokenId);
+            } else {
+                _minted[tokenId] = true;
+                _mint(msg.sender, tokenId);
+            }
             
             emit Purchased(msg.sender, tokenId);
         }
@@ -159,6 +167,7 @@ contract OnchainCats is ERC721, ERC721Enumerable, ERC2981, VirtualOwner, IERC490
         require(balance > 0, "No funds to withdraw");
         payable(virtualOwner()).transfer(balance);
     }
+    
     
     // Airdrop functions for virtual owner
     function airdrop(address to, uint256 tokenId) external onlyVirtualOwner {
