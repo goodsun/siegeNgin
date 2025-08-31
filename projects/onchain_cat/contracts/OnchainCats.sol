@@ -32,13 +32,32 @@ contract OnchainCats is ERC721A, ERC2981, Ownable, IERC4906 {
         return tokenId >= 1 && tokenId <= MAX_SUPPLY && ownerOf(tokenId) == owner();
     }
     
+    // Internal transfer function that bypasses approval checks
+    function _transferFromOwner(address to, uint256 tokenId) internal {
+        require(ownerOf(tokenId) == owner(), "Token not owned by contract owner");
+        
+        // Get the current token approval (if any) to restore it later
+        address previousApproval = getApproved(tokenId);
+        
+        // Temporarily approve this contract
+        _approve(address(this), tokenId, owner());
+        
+        // Use the standard transferFrom
+        this.transferFrom(owner(), to, tokenId);
+        
+        // Restore previous approval if it wasn't this contract
+        if (previousApproval != address(this) && previousApproval != address(0)) {
+            _approve(previousApproval, tokenId, to);
+        }
+    }
+    
     function buy(uint256 tokenId) public payable {
         require(isAvailable(tokenId), "Not for sale");
         require(msg.value >= price, "Insufficient payment");
         
         
-        // Transfer from owner to buyer using internal transfer
-        _transfer(owner(), msg.sender, tokenId);
+        // Transfer from owner to buyer using custom internal transfer
+        _transferFromOwner(msg.sender, tokenId);
         
         // Send payment to owner()
         payable(owner()).transfer(price);
@@ -59,7 +78,7 @@ contract OnchainCats is ERC721A, ERC2981, Ownable, IERC4906 {
             uint256 tokenId = tokenIds[i];
             require(isAvailable(tokenId), "Not for sale");
             
-            _transfer(owner(), msg.sender, tokenId);
+            _transferFromOwner(msg.sender, tokenId);
             
             emit Purchased(msg.sender, tokenId);
         }
