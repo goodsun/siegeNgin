@@ -2,9 +2,10 @@
 pragma solidity ^0.8.20;
 
 import "./CatComposer.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract CatMetadata {
-    CatComposer public immutable catComposer;
+contract CatMetadata is Ownable {
+    CatComposer public catComposer;
     
     // Material description mappings
     mapping(uint8 => string) private backDescriptions;
@@ -12,9 +13,19 @@ contract CatMetadata {
     mapping(uint8 => string) private itemDescriptions;
     mapping(uint8 => string) private frontDescriptions;
 
-    constructor(address _catComposer) {
+    event ComposerUpdated(address indexed previousComposer, address indexed newComposer);
+
+    constructor(address _catComposer) Ownable(msg.sender) {
+        require(_catComposer != address(0), "Invalid composer address");
         catComposer = CatComposer(_catComposer);
         initializeDescriptions();
+    }
+
+    function setComposer(address _newComposer) external onlyOwner {
+        require(_newComposer != address(0), "Invalid composer address");
+        address previousComposer = address(catComposer);
+        catComposer = CatComposer(_newComposer);
+        emit ComposerUpdated(previousComposer, _newComposer);
     }
 
     function initializeDescriptions() private {
