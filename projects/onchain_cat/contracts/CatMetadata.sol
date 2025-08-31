@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract CatMetadata is Ownable {
     CatComposer public catComposer;
-    
+
     // Material description mappings
     mapping(uint8 => string) private backDescriptions;
     mapping(uint8 => string) private mainDescriptions;
@@ -14,10 +14,10 @@ contract CatMetadata is Ownable {
     mapping(uint8 => string) private frontDescriptions;
 
     // Customizable contract metadata
-    string public collectionName = "OnchainCats";
-    string public collectionDescription = "OnchainCats is a fully on-chain NFT collection featuring 10,000 unique cats. All 10,000 cats exist from deployment and can be purchased. Each cat is procedurally generated and stored entirely on the blockchain with no external dependencies.";
-    string public externalLink = "https://onchainscats.com";
-    uint256 public sellerFeeBasisPoints = 500; // 5%
+    string public collectionName;
+    string public collectionDescription;
+    string public externalLink;
+    uint256 public sellerFeeBasisPoints;
 
     event ComposerUpdated(address indexed previousComposer, address indexed newComposer);
     event ContractURIUpdated();
@@ -25,6 +25,13 @@ contract CatMetadata is Ownable {
     constructor(address _catComposer) Ownable(msg.sender) {
         require(_catComposer != address(0), "Invalid composer address");
         catComposer = CatComposer(_catComposer);
+
+        // Set default values
+        collectionName = "Onchain Cats";
+        collectionDescription = "Full on-chain NFT collection";
+        externalLink = "https://onchain88.github.io/cats/";
+        sellerFeeBasisPoints = 800;
+
         initializeDescriptions();
     }
 
@@ -150,7 +157,7 @@ contract CatMetadata is Ownable {
 
     function generateDescription(uint256 tokenId) private view returns (string memory) {
         CatComposer.CatAttributes memory attrs = catComposer.getCatAttributes(tokenId);
-        
+
         return string(abi.encodePacked(
             mainDescriptions[attrs.mainId],
             ", ",
@@ -194,19 +201,19 @@ contract CatMetadata is Ownable {
             '"total_supply":10000'
             '}'
         );
-        
+
         return string(abi.encodePacked(
             "data:application/json;base64,",
             Base64.encode(json)
         ));
     }
-    
+
     function generateSampleSVG() private view returns (string memory) {
         // Generate a representative sample cat for the collection image
         uint256 sampleTokenId = 1;
         return catComposer.composeSVG(sampleTokenId);
     }
-    
+
     function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {
         bytes memory buffer = new bytes(2 * length + 2);
         buffer[0] = "0";
@@ -245,44 +252,44 @@ library Base64 {
 
     function encode(bytes memory data) internal pure returns (string memory) {
         if (data.length == 0) return "";
-        
+
         string memory table = TABLE;
         uint256 encodedLen = 4 * ((data.length + 2) / 3);
-        
+
         string memory result = new string(encodedLen);
-        
+
         assembly {
             let tablePtr := add(table, 1)
             let resultPtr := add(result, 32)
-            
+
             for {
                 let i := 0
             } lt(i, mload(data)) {
-                
+
             } {
                 let dataPtr := add(data, add(32, i))
                 let input := 0
-                
+
                 // Read 3 bytes
                 let byte1 := byte(0, mload(dataPtr))
                 let byte2 := 0
                 let byte3 := 0
-                
+
                 if lt(add(i, 1), mload(data)) {
                     byte2 := byte(0, mload(add(dataPtr, 1)))
                 }
                 if lt(add(i, 2), mload(data)) {
                     byte3 := byte(0, mload(add(dataPtr, 2)))
                 }
-                
+
                 input := or(or(shl(16, byte1), shl(8, byte2)), byte3)
-                
+
                 // Encode 4 characters
                 mstore8(resultPtr, mload(add(tablePtr, and(shr(18, input), 0x3F))))
                 resultPtr := add(resultPtr, 1)
                 mstore8(resultPtr, mload(add(tablePtr, and(shr(12, input), 0x3F))))
                 resultPtr := add(resultPtr, 1)
-                
+
                 switch lt(add(i, 1), mload(data))
                 case 1 {
                     mstore8(resultPtr, mload(add(tablePtr, and(shr(6, input), 0x3F))))
@@ -292,7 +299,7 @@ library Base64 {
                     mstore8(resultPtr, 0x3d)  // '='
                     resultPtr := add(resultPtr, 1)
                 }
-                
+
                 switch lt(add(i, 2), mload(data))
                 case 1 {
                     mstore8(resultPtr, mload(add(tablePtr, and(input, 0x3F))))
@@ -302,13 +309,13 @@ library Base64 {
                     mstore8(resultPtr, 0x3d)  // '='
                     resultPtr := add(resultPtr, 1)
                 }
-                
+
                 i := add(i, 3)
             }
-            
+
             mstore(result, encodedLen)
         }
-        
+
         return result;
     }
 }
