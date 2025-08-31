@@ -135,6 +135,46 @@ contract CatMetadata is Ownable {
         ));
     }
 
+    function contractURI() external view returns (string memory) {
+        bytes memory json = abi.encodePacked(
+            '{"name":"OnchainCats",'
+            '"description":"OnchainCats is a fully on-chain NFT collection featuring 10,000 unique cats. All 10,000 cats exist from deployment and can be purchased. Each cat is procedurally generated and stored entirely on the blockchain with no external dependencies.",'
+            '"image":"data:image/svg+xml;base64,',
+            Base64.encode(bytes(generateSampleSVG())),
+            '",'
+            '"external_link":"https://onchainscats.com",'
+            '"seller_fee_basis_points":500,'
+            '"fee_recipient":"',
+            toHexString(uint160(owner()), 20),
+            '",'
+            '"total_supply":10000'
+            '}'
+        );
+        
+        return string(abi.encodePacked(
+            "data:application/json;base64,",
+            Base64.encode(json)
+        ));
+    }
+    
+    function generateSampleSVG() private view returns (string memory) {
+        // Generate a representative sample cat for the collection image
+        uint256 sampleTokenId = 1;
+        return catComposer.composeSVG(sampleTokenId);
+    }
+    
+    function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {
+        bytes memory buffer = new bytes(2 * length + 2);
+        buffer[0] = "0";
+        buffer[1] = "x";
+        for (uint256 i = 2 * length + 1; i > 1; --i) {
+            buffer[i] = bytes1(uint8(value & 0xf) + (uint8(value & 0xf) < 10 ? 48 : 87));
+            value >>= 4;
+        }
+        require(value == 0, "Strings: hex length insufficient");
+        return string(buffer);
+    }
+
     function toString(uint256 value) internal pure returns (string memory) {
         if (value == 0) {
             return "0";

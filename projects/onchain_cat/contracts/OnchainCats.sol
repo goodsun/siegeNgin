@@ -96,6 +96,10 @@ contract OnchainCats is ERC721, ERC721Enumerable, ERC2981, VirtualOwner, IERC490
         return catMetadata.tokenURI(tokenId);
     }
     
+    function contractURI() public view returns (string memory) {
+        return catMetadata.contractURI();
+    }
+    
     function totalSupply() public pure override returns (uint256) {
         return TOTAL_SUPPLY;
     }
