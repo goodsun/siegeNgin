@@ -1406,21 +1406,33 @@ function formatBase64JsonResult(dataUri) {
         html += `<div class="text-sm text-gray-600">${metadata.description}</div>`;
       }
 
-      // Display image if it's SVG
-      if (
-        metadata.image &&
-        metadata.image.startsWith("data:image/svg+xml;base64,")
-      ) {
-        const svgBase64 = metadata.image.replace(
-          "data:image/svg+xml;base64,",
-          ""
-        );
-        const svg = atob(svgBase64);
-        html += `<div class="mt-2 p-2 bg-gray-100 rounded">
-          <div style="width: 350px; height: 350px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-            <img src="${metadata.image}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
-          </div>
-        </div>`;
+      // Display image (SVG, HTTPS, IPFS, Arweave URLs)
+      if (metadata.image) {
+        const isDataUri = metadata.image.startsWith("data:");
+        const isHttps = metadata.image.startsWith("https://");
+        const isIpfs = metadata.image.startsWith("ipfs://");
+        const isArweave = metadata.image.includes("arweave.net");
+        
+        if (isDataUri || isHttps || isIpfs || isArweave) {
+          let imageSrc = metadata.image;
+          
+          // Convert IPFS URL to HTTP gateway URL
+          if (isIpfs) {
+            imageSrc = metadata.image.replace("ipfs://", "https://ipfs.io/ipfs/");
+          }
+          
+          html += `<div class="mt-2 p-2 bg-gray-100 rounded">
+            <div style="width: 350px; height: 350px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+              <img src="${imageSrc}" 
+                   style="max-width: 100%; max-height: 100%; object-fit: contain;" 
+                   onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzUwIiBoZWlnaHQ9IjM1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzUwIiBoZWlnaHQ9IjM1MCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjE3NSIgeT0iMTc1IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiM5OTkiPkltYWdlIEZhaWxlZDwvdGV4dD48L3N2Zz4=';"
+                   alt="${metadata.name || 'NFT Image'}" />
+            </div>
+            <div class="text-xs text-gray-500 mt-1 truncate" title="${metadata.image}">
+              ${metadata.image.substring(0, 50)}${metadata.image.length > 50 ? '...' : ''}
+            </div>
+          </div>`;
+        }
       }
 
       // Display attributes
@@ -1433,6 +1445,19 @@ function formatBase64JsonResult(dataUri) {
         });
         html += "</div></div>";
       }
+      
+      // Always show raw JSON for debugging
+      html += `
+        <details class="mt-2">
+          <summary class="cursor-pointer text-sm font-semibold text-gray-600 hover:text-gray-800">
+            View Raw JSON
+          </summary>
+          <pre class="text-xs overflow-auto bg-gray-100 p-2 rounded mt-1">${JSON.stringify(
+            metadata,
+            null,
+            2
+          )}</pre>
+        </details>`;
     } else {
       // Generic JSON display
       html += `<pre class="text-xs overflow-auto bg-gray-100 p-2 rounded">${JSON.stringify(
@@ -2927,6 +2952,12 @@ function formatOutputValue(value, type) {
     return formatBase64JsonResult(valueStr);
   } else if (valueStr.startsWith("data:image/svg+xml;base64,")) {
     return formatBase64SvgResult(valueStr);
+  } else if (valueStr.startsWith("data:")) {
+    // Other data URIs - show truncated with full text on hover
+    return `<span class="text-xs text-gray-600" title="${valueStr}">${valueStr.substring(0, 50)}...</span>`;
+  } else if (valueStr.startsWith("https://") || valueStr.startsWith("ipfs://") || valueStr.startsWith("ar://")) {
+    // External URLs - make them clickable
+    return `<a href="${valueStr}" target="_blank" class="text-blue-600 hover:underline" title="${valueStr}">${valueStr.substring(0, 50)}${valueStr.length > 50 ? '...' : ''}</a>`;
   }
 
   // Default
