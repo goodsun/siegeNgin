@@ -54,21 +54,6 @@ describe("Base721A", function () {
     });
   });
 
-  describe("Base URI", function () {
-    it("Should allow owner to set base URI", async function () {
-      const baseURI = "https://example.com/metadata/";
-      await base721A.setBaseURI(baseURI);
-      
-      await base721A.mint(1);
-      expect(await base721A.tokenURI(1)).to.equal(baseURI + "1");
-    });
-
-    it("Should revert if non-owner tries to set base URI", async function () {
-      await expect(
-        base721A.connect(addr1).setBaseURI("https://example.com/")
-      ).to.be.revertedWith("Ownable: caller is not the owner");
-    });
-  });
 
   describe("Contract URI", function () {
     it("Should allow owner to set contract URI", async function () {
@@ -111,13 +96,18 @@ describe("Base721A", function () {
       expect(jsonData.image).to.equal("https://example.com/image.png");
     });
 
-    it("Should fall back to base URI when metadata contract not set", async function () {
-      const baseURI = "https://example.com/";
-      await base721A.setBaseURI(baseURI);
+    it("Should return 404 JSON when metadata contract not set", async function () {
       await base721A.mint(1);
       
-      // Without metadata contract, should use base URI
-      expect(await base721A.tokenURI(1)).to.equal(baseURI + "1");
+      // Without metadata contract, should return 404-like JSON
+      const tokenURI = await base721A.tokenURI(1);
+      expect(tokenURI).to.include("data:application/json;base64,");
+      
+      const base64Data = tokenURI.replace("data:application/json;base64,", "");
+      const jsonData = JSON.parse(Buffer.from(base64Data, "base64").toString());
+      expect(jsonData.name).to.equal("404");
+      expect(jsonData.description).to.equal("Metadata not found");
+      expect(jsonData.image).to.equal("");
     });
 
     it("Should allow changing metadata contract", async function () {

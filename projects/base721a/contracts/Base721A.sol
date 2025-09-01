@@ -3,10 +3,10 @@ pragma solidity ^0.8.19;
 
 import "erc721a/contracts/ERC721A.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 import "./IMetadata.sol";
 
 contract Base721A is ERC721A, Ownable {
-    string private _baseTokenURI;
     string private _contractURI;
     address public metadataCA;
 
@@ -14,10 +14,6 @@ contract Base721A is ERC721A, Ownable {
 
     function mint(uint256 quantity) external onlyOwner {
         _mint(msg.sender, quantity);
-    }
-
-    function setBaseURI(string calldata baseURI) external onlyOwner {
-        _baseTokenURI = baseURI;
     }
 
     function setContractURI(string calldata uri) external onlyOwner {
@@ -32,10 +28,6 @@ contract Base721A is ERC721A, Ownable {
         return _contractURI;
     }
 
-    function _baseURI() internal view override returns (string memory) {
-        return _baseTokenURI;
-    }
-
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
         
@@ -43,7 +35,14 @@ contract Base721A is ERC721A, Ownable {
             return IMetadata(metadataCA).tokenURI(tokenId);
         }
         
-        return super.tokenURI(tokenId);
+        // Return 404-like JSON when no metadata contract is set
+        string memory json = '{"name":"404","description":"Metadata not found","image":""}';
+        return string(
+            abi.encodePacked(
+                "data:application/json;base64,",
+                Base64.encode(bytes(json))
+            )
+        );
     }
 
     function _startTokenId() internal pure override returns (uint256) {
