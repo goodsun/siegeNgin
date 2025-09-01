@@ -19,6 +19,7 @@
 - 🎨 外部メタデータコントラクトによる柔軟な表現
 - 📦 販売機能を持たないピュアなNFTコントラクト
 - 🔍 メタデータ未設定時の404 JSONフォールバック
+- 🔄 EIP-4906準拠のメタデータ更新通知
 
 ## インストール
 
@@ -52,6 +53,7 @@ npx hardhat run scripts/deploy.js --network <network-name>
 
 #### `setMetadataCA(address _metadataCA)`
 メタデータを提供する外部コントラクトのアドレスを設定
+- 既存トークンがある場合、`BatchMetadataUpdate`イベントを発行（EIP-4906）
 
 #### `setContractURI(string calldata uri)`
 コレクション全体のメタデータURI（OpenSea対応）を設定
@@ -65,6 +67,12 @@ npx hardhat run scripts/deploy.js --network <network-name>
 
 #### `contractURI()`
 コレクションメタデータURIを返却
+
+### イベント
+
+#### `BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId)`
+メタデータの一括更新を通知（EIP-4906準拠）
+- OpenSeaなどのマーケットプレイスが自動的にメタデータを再取得
 
 ## アーキテクチャ
 

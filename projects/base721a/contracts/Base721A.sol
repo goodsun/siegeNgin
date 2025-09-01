@@ -8,6 +8,7 @@ import "./IMetadata.sol";
 
 contract Base721A is ERC721A, Ownable {
     string private _contractURI;
+    string private _404Image;
     address public metadataCA;
     
     // EIP-4906 events
@@ -33,6 +34,15 @@ contract Base721A is ERC721A, Ownable {
         }
     }
 
+    function set404Image(string calldata imageDataURI) external onlyOwner {
+        _404Image = imageDataURI;
+        
+        // Emit event for tokens without metadata contract
+        if (metadataCA == address(0) && _totalMinted() > 0) {
+            emit BatchMetadataUpdate(_startTokenId(), _startTokenId() + _totalMinted() - 1);
+        }
+    }
+
     function contractURI() public view returns (string memory) {
         return _contractURI;
     }
@@ -45,7 +55,23 @@ contract Base721A is ERC721A, Ownable {
         }
         
         // Return 404-like JSON when no metadata contract is set
-        string memory json = '{"name":"404","description":"Metadata not found","image":""}';
+        string memory image;
+        if (bytes(_404Image).length > 0) {
+            image = _404Image;
+        } else {
+            // Default simple 404 SVG
+            string memory svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><rect width="400" height="400" fill="#f0f0f0"/><text x="200" y="200" font-family="Arial" font-size="72" font-weight="bold" text-anchor="middle" dominant-baseline="middle" fill="#666">404</text><text x="200" y="250" font-family="Arial" font-size="24" text-anchor="middle" fill="#999">Not Found</text></svg>';
+            image = string(abi.encodePacked(
+                "data:image/svg+xml;base64,",
+                Base64.encode(bytes(svg))
+            ));
+        }
+        
+        string memory json = string(abi.encodePacked(
+            '{"name":"404","description":"Metadata not found","image":"',
+            image,
+            '"}'
+        ));
         return string(
             abi.encodePacked(
                 "data:application/json;base64,",

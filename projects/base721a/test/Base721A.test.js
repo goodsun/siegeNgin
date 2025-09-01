@@ -107,7 +107,7 @@ describe("Base721A", function () {
       const jsonData = JSON.parse(Buffer.from(base64Data, "base64").toString());
       expect(jsonData.name).to.equal("404");
       expect(jsonData.description).to.equal("Metadata not found");
-      expect(jsonData.image).to.equal("");
+      expect(jsonData.image).to.include("data:image/svg+xml;base64,");
     });
 
     it("Should allow changing metadata contract", async function () {
@@ -155,6 +155,57 @@ describe("Base721A", function () {
     it("Should revert if non-owner tries to set metadata contract", async function () {
       await expect(
         base721A.connect(addr1).setMetadataCA(mockMetadata.address)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+  });
+
+  describe("404 Image Customization", function () {
+    let mockMetadata;
+
+    beforeEach(async function () {
+      const MockMetadata = await ethers.getContractFactory("MockMetadata");
+      mockMetadata = await MockMetadata.deploy("Test NFT", "A test NFT collection", "https://example.com/image.png");
+      await mockMetadata.deployed();
+    });
+
+    it("Should use custom 404 image when set", async function () {
+      await base721A.mint(1);
+      
+      // Set custom 404 image
+      const customImage = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCI+PC9zdmc+";
+      await base721A.set404Image(customImage);
+      
+      // Should return custom 404 image
+      const tokenURI = await base721A.tokenURI(1);
+      const base64Data = tokenURI.replace("data:application/json;base64,", "");
+      const jsonData = JSON.parse(Buffer.from(base64Data, "base64").toString());
+      expect(jsonData.image).to.equal(customImage);
+    });
+
+    it("Should emit BatchMetadataUpdate when setting 404 image without metadata contract", async function () {
+      await base721A.mint(5);
+      
+      // Setting 404 image should emit event when no metadata contract is set
+      await expect(base721A.set404Image("data:image/svg+xml;base64,test"))
+        .to.emit(base721A, "BatchMetadataUpdate")
+        .withArgs(1, 5);
+    });
+
+    it("Should not emit event when metadata contract is set", async function () {
+      await base721A.mint(5);
+      await base721A.setMetadataCA(mockMetadata.address);
+      
+      // Should not emit event because metadata contract is set
+      const tx = await base721A.set404Image("data:image/svg+xml;base64,test");
+      const receipt = await tx.wait();
+      
+      const events = receipt.events?.filter(e => e.event === "BatchMetadataUpdate") || [];
+      expect(events.length).to.equal(0);
+    });
+
+    it("Should revert if non-owner tries to set 404 image", async function () {
+      await expect(
+        base721A.connect(addr1).set404Image("data:image/svg+xml;base64,test")
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
   });
