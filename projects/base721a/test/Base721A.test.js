@@ -83,4 +83,70 @@ describe("Base721A", function () {
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
   });
+
+  describe("Metadata Contract", function () {
+    let mockMetadata;
+
+    beforeEach(async function () {
+      const MockMetadata = await ethers.getContractFactory("MockMetadata");
+      mockMetadata = await MockMetadata.deploy("Test NFT", "A test NFT collection", "https://example.com/image.png");
+      await mockMetadata.deployed();
+    });
+
+    it("Should use metadata contract when set", async function () {
+      await base721A.mint(1);
+      
+      // Set metadata contract
+      await base721A.setMetadataCA(mockMetadata.address);
+      
+      // tokenURI should now come from metadata contract
+      const tokenURI = await base721A.tokenURI(1);
+      expect(tokenURI).to.include("data:application/json;base64,");
+      
+      // Decode and check the JSON content
+      const base64Data = tokenURI.replace("data:application/json;base64,", "");
+      const jsonData = JSON.parse(Buffer.from(base64Data, "base64").toString());
+      expect(jsonData.name).to.equal("Test NFT #1");
+      expect(jsonData.description).to.equal("A test NFT collection");
+      expect(jsonData.image).to.equal("https://example.com/image.png");
+    });
+
+    it("Should fall back to base URI when metadata contract not set", async function () {
+      const baseURI = "https://example.com/";
+      await base721A.setBaseURI(baseURI);
+      await base721A.mint(1);
+      
+      // Without metadata contract, should use base URI
+      expect(await base721A.tokenURI(1)).to.equal(baseURI + "1");
+    });
+
+    it("Should allow changing metadata contract", async function () {
+      await base721A.mint(1);
+      
+      // Deploy second metadata contract
+      const MockMetadata = await ethers.getContractFactory("MockMetadata");
+      const mockMetadata2 = await MockMetadata.deploy("New NFT", "New description", "https://new.com/image.png");
+      await mockMetadata2.deployed();
+      
+      // Set first metadata contract
+      await base721A.setMetadataCA(mockMetadata.address);
+      let tokenURI = await base721A.tokenURI(1);
+      let base64Data = tokenURI.replace("data:application/json;base64,", "");
+      let jsonData = JSON.parse(Buffer.from(base64Data, "base64").toString());
+      expect(jsonData.name).to.equal("Test NFT #1");
+      
+      // Change to second metadata contract
+      await base721A.setMetadataCA(mockMetadata2.address);
+      tokenURI = await base721A.tokenURI(1);
+      base64Data = tokenURI.replace("data:application/json;base64,", "");
+      jsonData = JSON.parse(Buffer.from(base64Data, "base64").toString());
+      expect(jsonData.name).to.equal("New NFT #1");
+    });
+
+    it("Should revert if non-owner tries to set metadata contract", async function () {
+      await expect(
+        base721A.connect(addr1).setMetadataCA(mockMetadata.address)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+  });
 });
