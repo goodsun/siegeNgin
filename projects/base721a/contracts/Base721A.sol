@@ -9,6 +9,10 @@ import "./IMetadata.sol";
 contract Base721A is ERC721A, Ownable {
     string private _contractURI;
     address public metadataCA;
+    
+    // EIP-4906 events
+    event MetadataUpdate(uint256 _tokenId);
+    event BatchMetadataUpdate(uint256 _fromTokenId, uint256 _toTokenId);
 
     constructor(string memory name, string memory symbol) ERC721A(name, symbol) {}
 
@@ -22,6 +26,11 @@ contract Base721A is ERC721A, Ownable {
 
     function setMetadataCA(address _metadataCA) external onlyOwner {
         metadataCA = _metadataCA;
+        
+        // Emit event for all existing tokens
+        if (_totalMinted() > 0) {
+            emit BatchMetadataUpdate(_startTokenId(), _startTokenId() + _totalMinted() - 1);
+        }
     }
 
     function contractURI() public view returns (string memory) {

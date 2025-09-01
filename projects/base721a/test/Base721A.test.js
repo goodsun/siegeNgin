@@ -133,6 +133,25 @@ describe("Base721A", function () {
       expect(jsonData.name).to.equal("New NFT #1");
     });
 
+    it("Should emit BatchMetadataUpdate event when setting metadata contract", async function () {
+      await base721A.mint(5);
+      
+      // Setting metadata contract should emit BatchMetadataUpdate
+      await expect(base721A.setMetadataCA(mockMetadata.address))
+        .to.emit(base721A, "BatchMetadataUpdate")
+        .withArgs(1, 5);
+    });
+
+    it("Should not emit event when no tokens are minted", async function () {
+      // Setting metadata contract without any minted tokens should not emit event
+      const tx = await base721A.setMetadataCA(mockMetadata.address);
+      const receipt = await tx.wait();
+      
+      // Check that no BatchMetadataUpdate event was emitted
+      const events = receipt.events?.filter(e => e.event === "BatchMetadataUpdate") || [];
+      expect(events.length).to.equal(0);
+    });
+
     it("Should revert if non-owner tries to set metadata contract", async function () {
       await expect(
         base721A.connect(addr1).setMetadataCA(mockMetadata.address)
