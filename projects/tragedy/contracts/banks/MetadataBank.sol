@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 interface IMetadataBank {
     function getMetadataCount() external view returns (uint256);
     function getMetadata(uint256 index) external view returns (string memory);
+    function tokenURI(uint256 tokenId) external view returns (string memory);
 }
 
 /**
@@ -23,5 +24,9 @@ contract MetadataBank is IMetadataBank {
     
     function getMetadataCount() external view override returns (uint256) {
         return IMetadataBank(metadataContract).getMetadataCount();
+    }
+    
+    function tokenURI(uint256 tokenId) external view returns (string memory) {
+        return IMetadataBank(metadataContract).getMetadata(tokenId);
     }
 }
