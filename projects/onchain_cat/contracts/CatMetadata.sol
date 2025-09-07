@@ -32,7 +32,7 @@ contract CatMetadata is Ownable {
         externalLink = "https://onchain88.github.io/cats/";
         sellerFeeBasisPoints = 800;
 
-        initializeDescriptions();
+        // initializeDescriptions(); // Temporarily commented for deployment
     }
 
     function setComposer(address _newComposer) external onlyOwner {
@@ -127,6 +127,11 @@ contract CatMetadata is Ownable {
         frontDescriptions[7] = "feasting on a piece of meat";
         frontDescriptions[8] = "holding a rice ball";
         frontDescriptions[9] = "with a bowl of rice";
+    }
+
+    // Call this after deployment to initialize descriptions
+    function initializeAllDescriptions() external onlyOwner {
+        initializeDescriptions();
     }
 
     function tokenURI(uint256 tokenId) external view returns (string memory) {
