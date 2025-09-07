@@ -81,15 +81,15 @@ contract CatMetadata is Ownable {
 
     function initializeDescriptions() private {
         // Background descriptions
-        backDescriptions[0] = "a soft baby blue gingham pattern";
-        backDescriptions[1] = "a classic black and white checkerboard";
-        backDescriptions[2] = "a soft pink and lavender checkered pattern";
+        backDescriptions[0] = "a peaceful beach scene with waves and sand";
+        backDescriptions[1] = "a lush green forest landscape";
+        backDescriptions[2] = "a delicate floral pattern with blooming flowers";
         backDescriptions[3] = "fluffy white clouds";
-        backDescriptions[4] = "a pink gingham pattern";
-        backDescriptions[5] = "an elegant houndstooth pattern";
-        backDescriptions[6] = "playful polka dots";
-        backDescriptions[7] = "a starry night sky";
-        backDescriptions[8] = "bold horizontal stripes";
+        backDescriptions[4] = "a serene night sky with stars and moon";
+        backDescriptions[5] = "a snowy winter wonderland";
+        backDescriptions[6] = "a warm sunset with orange and pink hues";
+        backDescriptions[7] = "an urban cityscape with buildings";
+        backDescriptions[8] = "cherry blossoms in full bloom";
         backDescriptions[9] = "a traditional Scottish tartan";
 
         // Main cat descriptions
