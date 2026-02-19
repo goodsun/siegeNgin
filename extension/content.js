@@ -117,6 +117,17 @@
   // --- Panel drag ---
   const header = document.getElementById('sn-panel-header');
   let dragging = false, dragX = 0, dragY = 0;
+  
+  function onDragMove(e) {
+    panel.style.left = (e.clientX - dragX) + 'px';
+    panel.style.top = (e.clientY - dragY) + 'px';
+    e.preventDefault();
+  }
+  function onDragEnd(e) {
+    dragging = false;
+    window.removeEventListener('mousemove', onDragMove, true);
+    window.removeEventListener('mouseup', onDragEnd, true);
+  }
   header.addEventListener('mousedown', (e) => {
     if (e.target.id === 'sn-panel-close') return;
     dragging = true;
@@ -125,19 +136,12 @@
     dragY = e.clientY - rect.top;
     panel.style.right = 'auto';
     panel.style.bottom = 'auto';
+    panel.style.left = rect.left + 'px';
+    panel.style.top = rect.top + 'px';
+    window.addEventListener('mousemove', onDragMove, true);
+    window.addEventListener('mouseup', onDragEnd, true);
     e.preventDefault();
-    e.stopPropagation();
-  }, true);
-  document.addEventListener('mousemove', (e) => {
-    if (!dragging) return;
-    panel.style.left = (e.clientX - dragX) + 'px';
-    panel.style.top = (e.clientY - dragY) + 'px';
-    e.preventDefault();
-    e.stopPropagation();
-  }, true);
-  document.addEventListener('mouseup', (e) => {
-    if (dragging) { dragging = false; e.stopPropagation(); }
-  }, true);
+  });
 
   // --- Panel close ---
   document.getElementById('sn-panel-close').addEventListener('click', () => {
