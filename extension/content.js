@@ -146,6 +146,7 @@
 
   // --- Panel close ---
   document.getElementById('sn-panel-close').onmousedown = () => {
+    panelAction = true;
     panel.remove();
     window.__siegeNginActive = false;
     document.querySelectorAll('.sn-hover, .sn-selected').forEach(el => {
@@ -238,6 +239,8 @@
   // --- XPath copy ---
   document.getElementById('sn-btn-xpath').onmousedown = (e) => {
     e.stopPropagation();
+    panelAction = true;
+    setTimeout(() => panelAction = false, 100);
     if (!selectedEl) return;
     navigator.clipboard.writeText(getXPath(selectedEl));
     showSpeech('XPath コピーしました 📋');
@@ -246,6 +249,8 @@
   // --- Send to Teddy ---
   document.getElementById('sn-btn-send').onmousedown = async (e) => {
     e.stopPropagation();
+    panelAction = true;
+    setTimeout(() => panelAction = false, 100);
     if (!selectedEl) { showSpeech('要素を選択してね'); return; }
     const ei = getElementInfo(selectedEl);
     const comment = document.getElementById('sn-comment').value.trim();
