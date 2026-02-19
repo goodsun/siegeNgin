@@ -209,13 +209,17 @@
     if (hoveredEl) { hoveredEl.classList.remove('sn-hover'); hoveredEl = null; }
   }, true);
 
-  // --- Click ---
+  // --- Click (capture: intercept before page handlers) ---
   document.addEventListener('click', (e) => {
-    if (panel.contains(e.target)) return;
+    // Always let panel clicks through
+    if (panel.contains(e.target)) {
+      e.stopImmediatePropagation();
+      return;
+    }
     if (!window.__siegeNginActive) return;
     if (dragging) return;
     e.preventDefault();
-    e.stopPropagation();
+    e.stopImmediatePropagation();
 
     const target = findMeaningful(e.target, e.shiftKey);
     if (!target) return;
