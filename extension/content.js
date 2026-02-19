@@ -191,13 +191,6 @@
     });
   }
 
-  // --- Block all events on panel ---
-  panel.addEventListener('mousedown', (e) => e.stopPropagation(), true);
-  panel.addEventListener('mousemove', (e) => e.stopPropagation(), true);
-  panel.addEventListener('mouseup', (e) => e.stopPropagation(), true);
-  panel.addEventListener('mouseover', (e) => e.stopPropagation(), true);
-  panel.addEventListener('mouseout', (e) => e.stopPropagation(), true);
-
   // --- Hover ---
   document.addEventListener('mouseover', (e) => {
     if (panel.contains(e.target)) return;
