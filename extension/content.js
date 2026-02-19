@@ -150,7 +150,7 @@
     document.querySelectorAll('.sn-hover, .sn-selected').forEach(el => {
       el.classList.remove('sn-hover', 'sn-selected');
     });
-  });
+  };
 
   // --- Update selection display ---
   function updateDisplay() {
@@ -268,7 +268,7 @@
     } catch (e) {
       showSpeech('送信失敗: ' + e.message);
     }
-  });
+  };
 
   // --- Speech bubble ---
   function showSpeech(msg) {
