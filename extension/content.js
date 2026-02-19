@@ -114,6 +114,31 @@
   `;
   document.body.appendChild(panel);
 
+  // --- Panel drag ---
+  const header = document.getElementById('sn-panel-header');
+  let dragging = false, dragX = 0, dragY = 0;
+  header.addEventListener('mousedown', (e) => {
+    if (e.target.id === 'sn-panel-close') return;
+    dragging = true;
+    const rect = panel.getBoundingClientRect();
+    dragX = e.clientX - rect.left;
+    dragY = e.clientY - rect.top;
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    panel.style.left = (e.clientX - dragX) + 'px';
+    panel.style.top = (e.clientY - dragY) + 'px';
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
+  document.addEventListener('mouseup', (e) => {
+    if (dragging) { dragging = false; e.stopPropagation(); }
+  }, true);
+
   // --- Panel close ---
   document.getElementById('sn-panel-close').addEventListener('click', () => {
     panel.remove();
@@ -180,6 +205,7 @@
   document.addEventListener('click', (e) => {
     if (panel.contains(e.target)) return;
     if (!window.__siegeNginActive) return;
+    if (dragging) return;
     e.preventDefault();
     e.stopPropagation();
 
