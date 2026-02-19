@@ -79,6 +79,9 @@
   display: block;
   margin-top: 4px;
   font-size: 0.7rem;
+  max-height: 2.8em;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #sn-selection-info .text-preview {

@@ -169,8 +169,11 @@
       <span class="selector">${ei.selector}</span>
       ${ei.text ? `<div class="text-preview">${ei.text.slice(0, 120)}</div>` : ''}
     `;
-    // Breadcrumb
-    const chain = getAncestorChain(selectedEl);
+    // Breadcrumb (trim to last id ancestor + max 8)
+    let chain = getAncestorChain(selectedEl);
+    const lastIdIdx = chain.reduce((acc, el, i) => el.id ? i : acc, -1);
+    if (lastIdIdx > 0) chain = chain.slice(lastIdIdx);
+    if (chain.length > 8) chain = chain.slice(-8);
     bc.innerHTML = chain.map((ancestor, i) => {
       const tag = ancestor.tagName.toLowerCase();
       const id = ancestor.id ? `#${ancestor.id}` : '';
