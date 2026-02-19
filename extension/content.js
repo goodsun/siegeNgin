@@ -16,6 +16,7 @@
   const API_BASE = 'https://teddy.bon-soleil.com/siegengin';
   let selectedEl = null;
   let hoveredEl = null;
+  let panelAction = false;
 
   // --- CSS Selector Generator ---
   function getCSSSelector(el) {
@@ -180,6 +181,8 @@
     bc.querySelectorAll('.crumb').forEach((crumb, i) => {
       crumb.onmousedown = (e) => {
         e.stopPropagation();
+        panelAction = true;
+        setTimeout(() => panelAction = false, 100);
         const newEl = chain[i];
         if (newEl && newEl.tagName !== 'BODY') {
           selectedEl.classList.remove('sn-selected');
@@ -213,7 +216,7 @@
   // --- Click (capture: intercept before page handlers) ---
   document.addEventListener('click', (e) => {
     // Let panel clicks through normally
-    if (panel.contains(e.target)) return;
+    if (panel.contains(e.target) || panelAction) return;
     if (!window.__siegeNginActive) return;
     if (dragging) return;
     e.preventDefault();
