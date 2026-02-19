@@ -191,9 +191,10 @@
     });
   }
 
-  // --- Block hover on panel ---
+  // --- Block hover/click on panel ---
   panel.addEventListener('mouseover', (e) => e.stopPropagation(), true);
   panel.addEventListener('mouseout', (e) => e.stopPropagation(), true);
+  panel.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); }, true);
 
   // --- Hover ---
   document.addEventListener('mouseover', (e) => {
