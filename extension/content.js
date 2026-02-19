@@ -191,8 +191,7 @@
     });
   }
 
-  // --- Block click/hover on panel (but not mousedown for drag) ---
-  panel.addEventListener('click', (e) => e.stopPropagation(), true);
+  // --- Block hover on panel ---
   panel.addEventListener('mouseover', (e) => e.stopPropagation(), true);
   panel.addEventListener('mouseout', (e) => e.stopPropagation(), true);
 
