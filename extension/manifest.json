@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "siegeNgin",
+  "version": "0.1.0",
+  "description": "🏰 Point and communicate with AI",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_icon": "icon48.png",
+    "default_title": "siegeNgin - Toggle Pointing"
+  },
+  "content_scripts": [],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
