@@ -144,7 +144,7 @@
   });
 
   // --- Panel close ---
-  document.getElementById('sn-panel-close').addEventListener('click', () => {
+  document.getElementById('sn-panel-close').onmousedown = () => {
     panel.remove();
     window.__siegeNginActive = false;
     document.querySelectorAll('.sn-hover, .sn-selected').forEach(el => {
@@ -211,11 +211,8 @@
 
   // --- Click (capture: intercept before page handlers) ---
   document.addEventListener('click', (e) => {
-    // Always let panel clicks through
-    if (panel.contains(e.target)) {
-      e.stopImmediatePropagation();
-      return;
-    }
+    // Let panel clicks through normally
+    if (panel.contains(e.target)) return;
     if (!window.__siegeNginActive) return;
     if (dragging) return;
     e.preventDefault();
@@ -232,14 +229,16 @@
   }, true);
 
   // --- XPath copy ---
-  document.getElementById('sn-btn-xpath').addEventListener('click', () => {
+  document.getElementById('sn-btn-xpath').onmousedown = (e) => {
+    e.stopPropagation();
     if (!selectedEl) return;
     navigator.clipboard.writeText(getXPath(selectedEl));
     showSpeech('XPath コピーしました 📋');
-  });
+  };
 
   // --- Send to Teddy ---
-  document.getElementById('sn-btn-send').addEventListener('click', async () => {
+  document.getElementById('sn-btn-send').onmousedown = async (e) => {
+    e.stopPropagation();
     if (!selectedEl) { showSpeech('要素を選択してね'); return; }
     const ei = getElementInfo(selectedEl);
     const comment = document.getElementById('sn-comment').value.trim();
