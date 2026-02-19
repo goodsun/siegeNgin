@@ -178,7 +178,7 @@
     }).join('<span class="sep">›</span>');
 
     bc.querySelectorAll('.crumb').forEach((crumb, i) => {
-      crumb.addEventListener('click', (e) => {
+      crumb.onmousedown = (e) => {
         e.stopPropagation();
         const newEl = chain[i];
         if (newEl && newEl.tagName !== 'BODY') {
@@ -187,7 +187,7 @@
           selectedEl.classList.add('sn-selected');
           updateDisplay();
         }
-      });
+      };
     });
   }
 
