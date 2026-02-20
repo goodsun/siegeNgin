@@ -673,6 +673,9 @@
     }
 
     // Show confirmation dialog
+    // SECURITY NOTE: confirm() runs in Content Script's isolated world.
+    // Page JS cannot override it (window.confirm = () => true won't affect this).
+    // Do NOT move this to MAIN world injection without replacing with a custom dialog.
     const summary = `siegeNgin Actions (${actions.length}件)\n\n${lines.join('\n')}\n\n実行しますか？`;
     if (!confirm(summary)) {
       showSpeech('❌ キャンセルしました');
@@ -698,6 +701,12 @@
       try {
         const el = document.querySelector(act.selector);
         if (!el) { console.warn('[siegeNgin] selector not found:', act.selector); failed++; continue; }
+
+        // Validate expected tag if provided (mitigate DOM clobbering)
+        if (act.expectedTag && el.tagName !== act.expectedTag.toUpperCase()) {
+          console.warn('[siegeNgin] tag mismatch:', el.tagName, '!=', act.expectedTag);
+          failed++; continue;
+        }
 
         if (act.action === 'click' || act.action === 'submit') {
           el.click();

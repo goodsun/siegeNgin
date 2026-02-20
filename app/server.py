@@ -8,6 +8,10 @@ import secrets
 import time
 import string
 import random
+import hmac
+import fcntl
+import re
+from urllib.parse import urlparse
 
 PORT = 8791
 
@@ -16,12 +20,25 @@ GATEWAY_PORT = 18789
 OTP_FILE = os.path.join(DATA_DIR, 'otp.json')
 SESSION_TOKEN_FILE = os.path.join(DATA_DIR, 'session_token.json')
 FAILURE_COUNT_FILE = os.path.join(DATA_DIR, 'failure_count.json')
+OTP_RATE_FILE = os.path.join(DATA_DIR, 'otp_rate.json')
+OTP_RATE_WINDOW = 600  # 10 minutes
+OTP_RATE_LIMIT = 3     # max 3 OTPs per window
 
 # Telegram direct notification
 TELEGRAM_CHAT_ID = '8579868590'
 
 def get_telegram_bot_token():
-    """Read Telegram bot token from OpenClaw config."""
+    """Read Telegram bot token from siegeNgin config, fallback to OpenClaw config."""
+    # Prefer dedicated siegeNgin token file
+    sn_token_file = os.path.expanduser('~/.config/siegengin/telegram_token')
+    try:
+        with open(sn_token_file) as f:
+            token = f.read().strip()
+        if token:
+            return token
+    except FileNotFoundError:
+        pass
+    # Fallback to OpenClaw config
     try:
         with open(os.path.expanduser('~/.openclaw/openclaw.json')) as f:
             config = json.load(f)
@@ -56,6 +73,34 @@ ALLOWED_EXTENSION_ORIGINS = [
 # GATE_TOKEN = os.environ.get('SIEGENGIN_GATE_TOKEN', '')  # REMOVED
 
 
+def check_otp_rate_limit():
+    """Check if OTP generation is rate-limited. Returns True if allowed."""
+    now = time.time()
+    try:
+        with open(OTP_RATE_FILE) as f:
+            data = json.load(f)
+        # Filter to timestamps within window
+        timestamps = [t for t in data.get('timestamps', []) if now - t < OTP_RATE_WINDOW]
+    except (FileNotFoundError, json.JSONDecodeError):
+        timestamps = []
+    return len(timestamps) < OTP_RATE_LIMIT
+
+
+def record_otp_generation():
+    """Record an OTP generation event for rate limiting."""
+    now = time.time()
+    try:
+        with open(OTP_RATE_FILE) as f:
+            data = json.load(f)
+        timestamps = [t for t in data.get('timestamps', []) if now - t < OTP_RATE_WINDOW]
+    except (FileNotFoundError, json.JSONDecodeError):
+        timestamps = []
+    timestamps.append(now)
+    os.makedirs(DATA_DIR, mode=0o700, exist_ok=True)
+    with open(OTP_RATE_FILE, 'w') as f:
+        json.dump({'timestamps': timestamps}, f)
+
+
 def generate_otp(ttl_seconds=300):
     """Generate a 6-character alphanumeric OTP (uppercase) valid for ttl_seconds (default 5 min)."""
     # Generate 6-character uppercase alphanumeric OTP for easy input
@@ -72,6 +117,7 @@ def generate_otp(ttl_seconds=300):
     with open(OTP_FILE, 'w') as f:
         json.dump(data, f)
     os.chmod(OTP_FILE, 0o600)
+    record_otp_generation()
     return otp, data['expires']
 
 
@@ -86,7 +132,7 @@ def validate_otp(token):
             return False
         if time.time() > data.get('expires', 0):
             return False
-        if data.get('token') != token:
+        if not hmac.compare_digest(data.get('token', ''), token):
             return False
         # Mark as used
         data['used'] = True
@@ -121,7 +167,10 @@ def generate_session_token(ttl_seconds=86400):
     }
     os.makedirs(DATA_DIR, mode=0o700, exist_ok=True)
     with open(SESSION_TOKEN_FILE, 'w') as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
         json.dump(data, f)
+        f.flush()
+        fcntl.flock(f, fcntl.LOCK_UN)
     os.chmod(SESSION_TOKEN_FILE, 0o600)
     return token, data['expires']
 
@@ -132,10 +181,12 @@ def validate_session_token(token):
         return False
     try:
         with open(SESSION_TOKEN_FILE) as f:
+            fcntl.flock(f, fcntl.LOCK_SH)
             data = json.load(f)
+            fcntl.flock(f, fcntl.LOCK_UN)
         if time.time() > data.get('expires', 0):
             return False
-        return data.get('token') == token
+        return hmac.compare_digest(data.get('token', ''), token)
     except Exception:
         return False
 
@@ -164,12 +215,16 @@ def invalidate_session_token():
 
 
 def get_failure_count():
-    """Get current authentication failure count."""
+    """Get current authentication failure count (within 30-min window)."""
     if not os.path.exists(FAILURE_COUNT_FILE):
         return 0
     try:
         with open(FAILURE_COUNT_FILE) as f:
             data = json.load(f)
+        # Reset if last failure was more than 30 minutes ago
+        if time.time() - data.get('last_failure', 0) > 1800:
+            reset_failure_count()
+            return 0
         return data.get('count', 0)
     except Exception:
         return 0
@@ -287,6 +342,18 @@ def wake_teddy():
         print(f"[siegeNgin] Wake failed: {e}")
 
 
+def sanitize_html(html):
+    """Remove script tags and event handlers from innerHTML to mitigate prompt injection."""
+    if not html:
+        return html
+    # Remove script tags and their content
+    html = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    # Remove event handler attributes (on*)
+    html = re.sub(r'\s+on\w+\s*=\s*["\'][^"\']*["\']', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'\s+on\w+\s*=\s*\S+', '', html, flags=re.IGNORECASE)
+    return html
+
+
 def filter_point_data(data):
     """Filter point data for gate (structural info only).
     Full data is saved separately for hontai (main AI) to read locally."""
@@ -307,10 +374,10 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
         # Layer 1: Origin check
         origin = self.headers.get('Origin', '')
         if origin:
+            parsed_origin = urlparse(origin)
             origin_ok = (
                 origin in ALLOWED_ORIGINS or
-                origin.startswith('http://127.0.0.1') or
-                origin.startswith('http://localhost') or
+                (parsed_origin.hostname in ('127.0.0.1', 'localhost') and parsed_origin.scheme == 'http') or
                 origin in ALLOWED_EXTENSION_ORIGINS
             )
             if not origin_ok:
@@ -349,7 +416,7 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
         else:
             # For non-consuming checks (OPTIONS, GET response), just verify it matches
             otp = get_active_otp()
-            if otp and otp['token'] == token:
+            if otp and hmac.compare_digest(otp['token'], token):
                 return 'otp_valid'
 
         return 'unauthorized'
@@ -386,6 +453,12 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
                         'error': 'unauthorized',
                         'message': 'OTP already sent. Check your Telegram.',
                         'otp_generated': True
+                    })
+                    return
+                if not check_otp_rate_limit():
+                    self.send_json(429, {
+                        'error': 'rate_limited',
+                        'message': 'Too many OTP requests. Please wait 10 minutes.',
                     })
                     return
                 otp, expires = generate_otp()
@@ -439,6 +512,10 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
             body = self.rfile.read(length)
             data = json.loads(body)
 
+            # Sanitize innerHTML to mitigate prompt injection
+            if 'html' in data and data['html']:
+                data['html'] = sanitize_html(data['html'])
+
             os.makedirs(DATA_DIR, mode=0o700, exist_ok=True)
 
             # Save FULL data for hontai (local access only)
@@ -482,6 +559,7 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
 
     def handle_response(self, strip_actions=False):
         filepath = os.path.join(DATA_DIR, 'response.json')
+        consumed = filepath + '.consumed'
         if os.path.exists(filepath):
             try:
                 with open(filepath) as f:
@@ -492,7 +570,19 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
                     stripped = {k: v for k, v in data.items() if k != 'actions'}
                     self.send_json(200, stripped)
                     return
-                os.remove(filepath)  # consume once (full delivery)
+                # Atomic consume: rename then read (prevents double-delivery race)
+                try:
+                    os.rename(filepath, consumed)
+                except FileNotFoundError:
+                    # Already consumed by another request
+                    self.send_json(204, {})
+                    return
+                try:
+                    with open(consumed) as f:
+                        data = json.load(f)
+                    os.remove(consumed)
+                except Exception:
+                    pass
                 self.send_json(200, data)
             except Exception:
                 self.send_json(500, {'error': 'internal error'})
