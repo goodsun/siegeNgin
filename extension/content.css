@@ -50,7 +50,7 @@
   background: none;
   border: none;
   color: #6a5a8a;
-  font-size: 1.2em;
+  font-size: 16px;
   cursor: pointer;
 }
 #sn-panel-close:hover { color: #ff5050; }
