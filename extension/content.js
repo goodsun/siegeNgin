@@ -103,11 +103,13 @@
   panel.innerHTML = `
     <div id="sn-panel-header">
       <h3><img src="${chrome.runtime.getURL('icon48.png')}" style="width:18px;height:18px;border-radius:3px;vertical-align:middle;margin-right:4px;">siegeNgin</h3>
-      <div id="sn-size-controls">
-        <button id="sn-size-down">A-</button>
-        <button id="sn-size-up">A+</button>
+      <div id="sn-header-right">
+        <div id="sn-size-controls">
+          <button id="sn-size-down">A-</button>
+          <button id="sn-size-up">A+</button>
+        </div>
+        <button id="sn-panel-close">✕</button>
       </div>
-      <button id="sn-panel-close">✕</button>
     </div>
     <div id="sn-selection-info">クリックで要素を選択 ✨</div>
     <div id="sn-breadcrumb"></div>

@@ -26,6 +26,7 @@
   overflow: hidden;
   min-width: 240px;
   min-height: 200px;
+  height: 480px;
   display: flex;
   flex-direction: column;
 }
@@ -49,6 +50,15 @@
   margin: 0;
   font-size: 13px;
   color: #ff8c42;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+#sn-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
 }
 
 #sn-panel-close {
@@ -89,6 +99,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 #sn-selection-info .tag-line {
