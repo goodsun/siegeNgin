@@ -392,6 +392,7 @@
       const result = await resp.json();
       if (result.ok) {
         document.getElementById('sn-comment').value = '';
+        showSpeech(result.message || '届けました🏰');
         pollForResponse();
       }
     } catch (e) {
