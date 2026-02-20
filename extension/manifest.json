@@ -3,7 +3,7 @@
   "name": "siegeNgin",
   "version": "0.1.0",
   "description": "🏰 Point and communicate with AI",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": ["activeTab", "scripting", "storage"],
   "action": {
     "default_icon": "icon48.png",
     "default_title": "siegeNgin - Toggle Pointing"
