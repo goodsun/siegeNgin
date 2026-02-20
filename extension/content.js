@@ -116,6 +116,7 @@
       <button id="sn-btn-send">🧸 テディに送信</button>
     </div>
     <div id="sn-speech"></div>
+    <div id="sn-resize-handle"></div>
   `;
   document.body.appendChild(panel);
 
@@ -168,6 +169,57 @@
     window.addEventListener('mouseup', onDragEnd, true);
     e.preventDefault();
   });
+
+  // --- Panel resize (bottom-left corner) ---
+  const resizeHandle = document.getElementById('sn-resize-handle');
+  let resizing = false;
+  
+  resizeHandle.addEventListener('mousedown', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    resizing = true;
+    panelAction = true;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const rect = panel.getBoundingClientRect();
+    const startW = rect.width;
+    const startH = rect.height;
+    const startLeft = rect.left;
+    // Switch to left/top positioning if not already
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+    panel.style.left = rect.left + 'px';
+    panel.style.top = rect.top + 'px';
+    
+    function onResizeMove(e) {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      // bottom-left: width grows leftward (negative dx = wider), height grows downward
+      const newW = Math.max(240, startW - dx);
+      const newH = Math.max(200, startH + dy);
+      panel.style.width = newW + 'px';
+      panel.style.height = newH + 'px';
+      panel.style.left = (startLeft + dx) + 'px';
+      e.preventDefault();
+    }
+    function onResizeEnd() {
+      resizing = false;
+      setTimeout(() => panelAction = false, 100);
+      // Save size
+      localStorage.setItem('sn_panel_w', panel.style.width);
+      localStorage.setItem('sn_panel_h', panel.style.height);
+      window.removeEventListener('mousemove', onResizeMove, true);
+      window.removeEventListener('mouseup', onResizeEnd, true);
+    }
+    window.addEventListener('mousemove', onResizeMove, true);
+    window.addEventListener('mouseup', onResizeEnd, true);
+  });
+
+  // Restore saved size
+  const savedW = localStorage.getItem('sn_panel_w');
+  const savedH = localStorage.getItem('sn_panel_h');
+  if (savedW) panel.style.width = savedW;
+  if (savedH) panel.style.height = savedH;
 
   // --- Panel close ---
   document.getElementById('sn-panel-close').onmousedown = () => {
@@ -247,7 +299,7 @@
     // Let panel clicks through normally
     if (panel.contains(e.target) || panelAction) return;
     if (!window.__siegeNginActive) return;
-    if (dragging) return;
+    if (dragging || resizing) return;
     e.preventDefault();
     e.stopImmediatePropagation();
 

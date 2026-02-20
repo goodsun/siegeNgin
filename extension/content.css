@@ -24,6 +24,11 @@
   color: #e0dce8;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   overflow: hidden;
+  position: relative;
+  min-width: 240px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
 }
 
 #sn-panel * {
@@ -38,11 +43,12 @@
   background: #0a0a14;
   border-bottom: 1px solid #2a2a3a;
   cursor: move;
+  flex-shrink: 0;
 }
 
 #sn-panel-header h3 {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 13px;
   color: #ff8c42;
 }
 
@@ -81,6 +87,8 @@
   font-size: 1em;
   border-bottom: 1px solid #2a2a3a;
   min-height: 60px;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
 #sn-selection-info .tag {
@@ -122,6 +130,7 @@
   gap: 2px;
   align-items: center;
   border-bottom: 1px solid #2a2a3a;
+  flex-shrink: 0;
 }
 
 #sn-breadcrumb .crumb {
@@ -149,7 +158,7 @@
 
 #sn-breadcrumb .sep {
   color: #3a2a5a;
-  font-size: 0.6rem;
+  font-size: 0.6em;
 }
 
 #sn-comment {
@@ -162,7 +171,8 @@
   font-size: 1em;
   font-family: inherit;
   resize: none;
-  height: 80px;
+  flex: 1;
+  min-height: 40px;
 }
 #sn-comment:focus { outline: none; background: #1e1e2e; }
 #sn-comment::placeholder { color: #4a3a6a; }
@@ -171,6 +181,7 @@
   display: flex;
   gap: 8px;
   padding: 10px 14px;
+  flex-shrink: 0;
 }
 
 #sn-panel-footer button {
@@ -178,7 +189,7 @@
   padding: 8px;
   border: none;
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -198,9 +209,37 @@
 
 #sn-speech {
   padding: 8px 14px;
-  font-size: 0.9rem;
+  font-size: 13px;
   color: #e0dce8;
   background: #0a0a14;
   display: none;
   word-wrap: break-word;
+  flex-shrink: 0;
+}
+
+/* Resize handle (bottom-left corner) */
+#sn-resize-handle {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  cursor: sw-resize;
+  z-index: 10;
+}
+
+#sn-resize-handle::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 3px;
+  width: 8px;
+  height: 8px;
+  border-left: 2px solid #4a3a6a;
+  border-bottom: 2px solid #4a3a6a;
+  transition: border-color 0.2s;
+}
+
+#sn-resize-handle:hover::after {
+  border-color: #ff8c42;
 }
