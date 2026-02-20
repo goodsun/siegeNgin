@@ -149,8 +149,14 @@
   let dragging = false, dragX = 0, dragY = 0;
   
   function onDragMove(e) {
-    panel.style.left = (e.clientX - dragX) + 'px';
-    panel.style.top = (e.clientY - dragY) + 'px';
+    const rect = panel.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // Clamp so at least 60px of panel stays visible on each edge
+    let newX = Math.max(-rect.width + 60, Math.min(vw - 60, e.clientX - dragX));
+    let newY = Math.max(0, Math.min(vh - 40, e.clientY - dragY));
+    panel.style.left = newX + 'px';
+    panel.style.top = newY + 'px';
     e.preventDefault();
   }
   function onDragEnd(e) {
