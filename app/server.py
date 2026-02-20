@@ -17,6 +17,33 @@ OTP_FILE = os.path.join(DATA_DIR, 'otp.json')
 SESSION_TOKEN_FILE = os.path.join(DATA_DIR, 'session_token.json')
 FAILURE_COUNT_FILE = os.path.join(DATA_DIR, 'failure_count.json')
 
+# Telegram direct notification
+TELEGRAM_CHAT_ID = '8579868590'
+
+def get_telegram_bot_token():
+    """Read Telegram bot token from OpenClaw config."""
+    try:
+        with open(os.path.expanduser('~/.openclaw/openclaw.json')) as f:
+            config = json.load(f)
+        return config['channels']['telegram']['botToken']
+    except:
+        return None
+
+def send_telegram(text):
+    """Send message directly via Telegram Bot API (no wake roundtrip)."""
+    token = get_telegram_bot_token()
+    if not token:
+        print("[siegeNgin] No Telegram bot token found")
+        return
+    url = f'https://api.telegram.org/bot{token}/sendMessage'
+    data = json.dumps({'chat_id': TELEGRAM_CHAT_ID, 'text': text, 'parse_mode': 'HTML'}).encode()
+    req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+    try:
+        urllib.request.urlopen(req, timeout=10)
+        print(f"[siegeNgin] Telegram notification sent")
+    except Exception as e:
+        print(f"[siegeNgin] Telegram send failed: {e}")
+
 # Chrome extension origin (set after installing extension)
 ALLOWED_ORIGINS = os.environ.get('SIEGENGIN_ALLOWED_ORIGINS', '').split(',')
 
@@ -206,22 +233,21 @@ def send_hooks_wake(message):
 
 
 def notify_otp(otp):
-    """Send OTP notification via hooks/wake to Telegram."""
+    """Send OTP notification directly via Telegram Bot API (instant)."""
     message = (
-        f"🏰 siegeNgin通行証が発行されました\n"
-        f"仮通行証: {otp}\n"
+        f"🔑 <b>siegeNgin仮通行証: {otp}</b>\n"
         f"⏰ 5分以内にChrome拡張に入力してください"
     )
-    send_hooks_wake(message)
+    send_telegram(message)
 
 
 def notify_lock():
-    """Send lock notification via hooks/wake to Telegram."""
+    """Send lock notification directly via Telegram Bot API (instant)."""
     message = (
-        f"🔒 siegeNgin: 認証5回失敗でロックされました\n"
+        f"🔒 <b>siegeNgin: 認証5回失敗でロック</b>\n"
         f"チャットから「ロック解除」と言ってください"
     )
-    send_hooks_wake(message)
+    send_telegram(message)
 
 
 def wake_teddy():
