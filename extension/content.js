@@ -323,6 +323,8 @@
   // --- Hover ---
   document.addEventListener('mouseover', (e) => {
     if (panel.contains(e.target) || otpDialogOpen) return;
+    const otpOv = document.getElementById('sn-otp-overlay');
+    if (otpOv && otpOv.contains(e.target)) return;
     const target = findMeaningful(e.target, false);
     if (!target) return;
     if (hoveredEl && hoveredEl !== target) hoveredEl.classList.remove('sn-hover');
@@ -338,6 +340,8 @@
   document.addEventListener('click', (e) => {
     // Let panel clicks through normally
     if (panel.contains(e.target) || panelAction) return;
+    const otpOverlay = document.getElementById('sn-otp-overlay');
+    if (otpOverlay && otpOverlay.contains(e.target)) return;
     if (!window.__siegeNginActive) return;
     if (dragging || resizing) return;
     if (otpDialogOpen) return;
