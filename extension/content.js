@@ -13,7 +13,7 @@
   }
   window.__siegeNginActive = true;
 
-  const API_BASE = 'https://teddy.bon-soleil.com/siegengin';
+  // API calls go through background.js (fixed origin + token)
   let selectedEl = null;
   let hoveredEl = null;
   let panelAction = false;
@@ -382,18 +382,26 @@
     };
     try {
       // Flush old response
-      await fetch(`${API_BASE}/api/response`).catch(() => {});
-      showSpeech('受け取ったよ！考え中... 🤔');
-      const resp = await fetch(`${API_BASE}/api/point`, {
+      chrome.runtime.sendMessage({ type: 'api', method: 'GET', endpoint: '/api/response' }).catch(() => {});
+      showSpeech('送信中... 🏰');
+      const resp = await chrome.runtime.sendMessage({
+        type: 'api',
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        endpoint: '/api/point',
+        body: data,
       });
-      const result = await resp.json();
-      if (result.ok) {
+      if (resp.error) {
+        showSpeech('送信失敗: ' + resp.error);
+        return;
+      }
+      if (resp.data && resp.data.ok) {
         document.getElementById('sn-comment').value = '';
-        showSpeech(result.message || '届けました🏰');
+        showSpeech(resp.data.message || '届けました🏰');
         pollForResponse();
+      } else if (resp.status === 403) {
+        showSpeech('🔒 認証が必要です');
+      } else {
+        showSpeech('送信失敗: ' + (resp.data?.error || 'unknown'));
       }
     } catch (e) {
       showSpeech('送信失敗: ' + e.message);
@@ -414,10 +422,14 @@
     if (attempts > 30) { showSpeech('ちょっと時間かかってるかも... 💦'); return; }
     setTimeout(async () => {
       try {
-        const resp = await fetch(`${API_BASE}/api/response`);
-        if (resp.status === 200) {
-          const data = await resp.json();
-          if (data.message) { showSpeech(data.message); return; }
+        const resp = await chrome.runtime.sendMessage({
+          type: 'api',
+          method: 'GET',
+          endpoint: '/api/response',
+        });
+        if (resp.status === 200 && resp.data && resp.data.message) {
+          showSpeech(resp.data.message);
+          return;
         }
       } catch (e) {}
       pollForResponse(attempts + 1);

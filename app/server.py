@@ -14,6 +14,9 @@ GATEWAY_PORT = 18789
 # Find your extension ID at chrome://extensions
 ALLOWED_ORIGINS = os.environ.get('SIEGENGIN_ALLOWED_ORIGINS', '').split(',')
 
+# Gate token — if set, X-SiegeNgin-Token header must match
+GATE_TOKEN = os.environ.get('SIEGENGIN_GATE_TOKEN', '')
+
 
 def get_gateway_token():
     try:
@@ -68,19 +71,27 @@ def filter_point_data(data):
 
 class SiegeHandler(http.server.BaseHTTPRequestHandler):
 
-    def check_origin(self):
-        """Check if request origin is allowed."""
+    def check_auth(self):
+        """Check origin + token (two-layer auth)."""
+        # Layer 1: Origin check
         origin = self.headers.get('Origin', '')
-        # Always allow no-origin (direct requests, curl)
-        if not origin:
-            return True
-        # Allow configured Chrome extension origins
-        if origin in ALLOWED_ORIGINS:
-            return True
-        # Allow localhost for development
-        if origin.startswith('http://127.0.0.1') or origin.startswith('http://localhost'):
-            return True
-        return False
+        if origin:
+            origin_ok = (
+                origin in ALLOWED_ORIGINS or
+                origin.startswith('http://127.0.0.1') or
+                origin.startswith('http://localhost') or
+                origin.startswith('chrome-extension://')
+            )
+            if not origin_ok:
+                return False
+
+        # Layer 2: Token check (if configured)
+        if GATE_TOKEN:
+            token = self.headers.get('X-SiegeNgin-Token', '')
+            if token != GATE_TOKEN:
+                return False
+
+        return True
 
     def send_cors_headers(self, origin=None):
         """Send CORS headers for allowed origin."""
@@ -92,7 +103,7 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.startswith('/api/response'):
-            if not self.check_origin():
+            if not self.check_auth():
                 self.send_json(403, {'error': 'forbidden'})
                 return
             self.handle_response()
@@ -101,7 +112,7 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.path.startswith('/api/point'):
-            if not self.check_origin():
+            if not self.check_auth():
                 self.send_json(403, {'error': 'forbidden'})
                 return
             self.handle_point()
@@ -109,7 +120,7 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
             self.send_json(404, {'error': 'not found'})
 
     def do_OPTIONS(self):
-        if not self.check_origin():
+        if not self.check_auth():
             self.send_response(403)
             self.end_headers()
             return
@@ -189,7 +200,8 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def log_message(self, format, *args):
-        print(f"[siegeNgin] {args[0]}")
+        origin = self.headers.get('Origin', 'no-origin') if hasattr(self, 'headers') and self.headers else ''
+        print(f"[siegeNgin] {args[0]} (origin: {origin})")
 
 
 class ThreadedHTTPServer(http.server.ThreadingHTTPServer):
@@ -204,4 +216,8 @@ if __name__ == '__main__':
         print(f"🔒 Allowed origins: {', '.join(ALLOWED_ORIGINS)}")
     else:
         print(f"⚠️  No SIEGENGIN_ALLOWED_ORIGINS set — only localhost allowed")
+    if GATE_TOKEN:
+        print(f"🔑 Gate token: enabled")
+    else:
+        print(f"⚠️  No SIEGENGIN_GATE_TOKEN set — token auth disabled")
     server.serve_forever()
