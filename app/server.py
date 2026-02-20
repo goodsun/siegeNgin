@@ -104,7 +104,8 @@ def record_otp_generation():
 def generate_otp(ttl_seconds=300):
     """Generate a 6-character alphanumeric OTP (uppercase) valid for ttl_seconds (default 5 min)."""
     # Generate 6-character uppercase alphanumeric OTP for easy input
-    chars = string.ascii_uppercase + string.digits
+    # Exclude ambiguous characters: 0/O, 1/I/L, 5/S, 2/Z, 8/B
+    chars = 'ACDEFGHJKMNPQRTUVWXY34679'
     otp = ''.join(secrets.choice(chars) for _ in range(6))
     
     data = {
