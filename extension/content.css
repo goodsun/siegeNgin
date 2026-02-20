@@ -24,7 +24,6 @@
   color: #e0dce8;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   overflow: hidden;
-  position: relative;
   min-width: 240px;
   min-height: 200px;
   display: flex;
