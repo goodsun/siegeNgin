@@ -746,9 +746,11 @@
           endpoint: '/api/response',
         });
         if (resp.status === 200 && resp.data && resp.data.message) {
+          console.log('[siegeNgin] poll response:', JSON.stringify(resp.data).slice(0, 200));
           showSpeech(resp.data.message);
           // Execute actions if present
           if (resp.data.actions && Array.isArray(resp.data.actions)) {
+            console.log('[siegeNgin] executing', resp.data.actions.length, 'actions');
             executeActions(resp.data.actions);
           }
           return;
