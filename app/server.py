@@ -26,7 +26,7 @@ def get_telegram_bot_token():
         with open(os.path.expanduser('~/.openclaw/openclaw.json')) as f:
             config = json.load(f)
         return config['channels']['telegram']['botToken']
-    except:
+    except Exception:
         return None
 
 def send_telegram(text):
@@ -46,6 +46,11 @@ def send_telegram(text):
 
 # Chrome extension origin (set after installing extension)
 ALLOWED_ORIGINS = os.environ.get('SIEGENGIN_ALLOWED_ORIGINS', '').split(',')
+# Allowed Chrome extension IDs (comma-separated env, or default)
+ALLOWED_EXTENSION_ORIGINS = [
+    f"chrome-extension://{eid.strip()}" for eid in
+    os.environ.get('SIEGENGIN_EXTENSION_IDS', 'djhifbmcbadffjmjlafecagbckdpnilg').split(',')
+]
 
 # GATE_TOKEN environment variable is abolished - replaced by two-factor auth
 # GATE_TOKEN = os.environ.get('SIEGENGIN_GATE_TOKEN', '')  # REMOVED
@@ -55,7 +60,7 @@ def generate_otp(ttl_seconds=300):
     """Generate a 6-character alphanumeric OTP (uppercase) valid for ttl_seconds (default 5 min)."""
     # Generate 6-character uppercase alphanumeric OTP for easy input
     chars = string.ascii_uppercase + string.digits
-    otp = ''.join(random.choice(chars) for _ in range(6))
+    otp = ''.join(secrets.choice(chars) for _ in range(6))
     
     data = {
         'token': otp,
@@ -88,7 +93,7 @@ def validate_otp(token):
         with open(OTP_FILE, 'w') as f:
             json.dump(data, f)
         return True
-    except:
+    except Exception:
         return False
 
 
@@ -102,7 +107,7 @@ def get_active_otp():
         if data.get('used') or time.time() > data.get('expires', 0):
             return None
         return data
-    except:
+    except Exception:
         return None
 
 
@@ -131,7 +136,7 @@ def validate_session_token(token):
         if time.time() > data.get('expires', 0):
             return False
         return data.get('token') == token
-    except:
+    except Exception:
         return False
 
 
@@ -145,7 +150,7 @@ def get_active_session_token():
         if time.time() > data.get('expires', 0):
             return None
         return data
-    except:
+    except Exception:
         return None
 
 
@@ -154,7 +159,7 @@ def invalidate_session_token():
     if os.path.exists(SESSION_TOKEN_FILE):
         try:
             os.remove(SESSION_TOKEN_FILE)
-        except:
+        except Exception:
             pass
 
 
@@ -166,7 +171,7 @@ def get_failure_count():
         with open(FAILURE_COUNT_FILE) as f:
             data = json.load(f)
         return data.get('count', 0)
-    except:
+    except Exception:
         return 0
 
 
@@ -189,7 +194,7 @@ def reset_failure_count():
     if os.path.exists(FAILURE_COUNT_FILE):
         try:
             os.remove(FAILURE_COUNT_FILE)
-        except:
+        except Exception:
             pass
 
 
@@ -204,7 +209,7 @@ def get_hooks_token():
         with open(os.path.expanduser('~/.openclaw/openclaw.json')) as f:
             config = json.load(f)
         return config['hooks']['token']
-    except:
+    except Exception:
         return None
 
 
@@ -306,7 +311,7 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
                 origin in ALLOWED_ORIGINS or
                 origin.startswith('http://127.0.0.1') or
                 origin.startswith('http://localhost') or
-                origin.startswith('chrome-extension://')
+                origin in ALLOWED_EXTENSION_ORIGINS
             )
             if not origin_ok:
                 return 'unauthorized'
@@ -336,6 +341,9 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
                 print(f"[siegeNgin] OTP validation failed, failure count: {count}")
                 if count >= 5:
                     print(f"[siegeNgin] Account locked after {count} failures")
+                    # Invalidate OTP on lock
+                    if os.path.exists(OTP_FILE):
+                        os.remove(OTP_FILE)
                     threading.Thread(target=notify_lock, daemon=True).start()
                 return 'unauthorized'
         else:
@@ -371,7 +379,15 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json(423, {'error': 'locked - too many authentication failures'})
                 return
             elif auth_result == 'unauthorized':
-                # Generate and send OTP automatically
+                # Rate limit OTP generation: reuse existing if still valid
+                existing = get_active_otp()
+                if existing:
+                    self.send_json(401, {
+                        'error': 'unauthorized',
+                        'message': 'OTP already sent. Check your Telegram.',
+                        'otp_generated': True
+                    })
+                    return
                 otp, expires = generate_otp()
                 print(f"[siegeNgin] Generated OTP: {otp} (expires at {time.ctime(expires)})")
                 # Send OTP notification in background
@@ -438,7 +454,7 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
                 try:
                     with open(history_file) as f:
                         history = json.load(f)
-                except:
+                except Exception:
                     history = []
             history.append(data)
             history = history[-10:]
@@ -478,7 +494,7 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
                     return
                 os.remove(filepath)  # consume once (full delivery)
                 self.send_json(200, data)
-            except:
+            except Exception:
                 self.send_json(500, {'error': 'internal error'})
         else:
             self.send_json(204, {})

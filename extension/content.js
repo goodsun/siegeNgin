@@ -663,14 +663,13 @@
     // Build confirmation summary
     const lines = [];
     for (const act of valueActions) {
-      const label = act.label || act.selector;
-      lines.push(`📝 ${label} → ${String(act.value).slice(0, 50)}`);
+      lines.push(`📝 [${act.selector}] ${act.label || ''} → ${String(act.value).slice(0, 50)}`);
     }
     for (const act of clickActions) {
-      lines.push(`🖱️ click: ${act.label || act.selector}`);
+      lines.push(`🖱️ click: [${act.selector}] ${act.label || ''}`);
     }
     for (const act of submitActions) {
-      lines.push(`⚠️ SUBMIT: ${act.label || act.selector}`);
+      lines.push(`⚠️ SUBMIT: [${act.selector}] ${act.label || ''}`);
     }
 
     // Show confirmation dialog
