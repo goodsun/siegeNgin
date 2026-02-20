@@ -2,7 +2,8 @@
 (function() {
   // Prevent double injection
   if (window.__siegeNginActive) {
-    // Toggle off
+    // Toggle off — cleanup listeners and DOM
+    if (window.__siegeNginCleanup) window.__siegeNginCleanup();
     const panel = document.getElementById('sn-panel');
     if (panel) panel.remove();
     window.__siegeNginActive = false;
@@ -265,6 +266,7 @@
   // --- Panel close ---
   document.getElementById('sn-panel-close').onmousedown = () => {
     panelAction = true;
+    cleanupListeners();
     panel.remove();
     window.__siegeNginActive = false;
     document.querySelectorAll('.sn-hover, .sn-selected').forEach(el => {
@@ -320,8 +322,8 @@
   panel.addEventListener('mouseout', (e) => e.stopPropagation(), true);
   panel.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); }, true);
 
-  // --- Hover ---
-  document.addEventListener('mouseover', (e) => {
+  // --- Hover (named for cleanup) ---
+  function onHover(e) {
     if (panel.contains(e.target) || otpDialogOpen) return;
     const otpOv = document.getElementById('sn-otp-overlay');
     if (otpOv && otpOv.contains(e.target)) return;
@@ -330,15 +332,13 @@
     if (hoveredEl && hoveredEl !== target) hoveredEl.classList.remove('sn-hover');
     if (!target.classList.contains('sn-selected')) target.classList.add('sn-hover');
     hoveredEl = target;
-  }, true);
-
-  document.addEventListener('mouseout', (e) => {
+  }
+  function onHoverOut(e) {
     if (hoveredEl) { hoveredEl.classList.remove('sn-hover'); hoveredEl = null; }
-  }, true);
+  }
 
-  // --- Click (capture: intercept before page handlers) ---
-  document.addEventListener('click', (e) => {
-    // Let panel clicks through normally
+  // --- Click (named for cleanup) ---
+  function onClick(e) {
     if (panel.contains(e.target) || panelAction) return;
     const otpOverlay = document.getElementById('sn-otp-overlay');
     if (otpOverlay && otpOverlay.contains(e.target)) return;
@@ -356,7 +356,19 @@
     selectedEl = target;
     selectedEl.classList.add('sn-selected');
     updateDisplay();
-  }, true);
+  }
+
+  document.addEventListener('mouseover', onHover, true);
+  document.addEventListener('mouseout', onHoverOut, true);
+  document.addEventListener('click', onClick, true);
+
+  // --- Cleanup: remove all document-level listeners ---
+  function cleanupListeners() {
+    document.removeEventListener('mouseover', onHover, true);
+    document.removeEventListener('mouseout', onHoverOut, true);
+    document.removeEventListener('click', onClick, true);
+  }
+  window.__siegeNginCleanup = cleanupListeners;
 
   // --- XPath copy ---
   document.getElementById('sn-btn-xpath').onmousedown = (e) => {
@@ -596,6 +608,7 @@
       document.body.removeChild(overlay);
       document.head.removeChild(style);
       // Close siegeNgin entirely
+      cleanupListeners();
       panel.remove();
       window.__siegeNginActive = false;
       document.querySelectorAll('.sn-hover, .sn-selected').forEach(el => {
