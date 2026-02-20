@@ -194,12 +194,11 @@
     function onResizeMove(e) {
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
-      // bottom-left: width grows leftward (negative dx = wider), height grows downward
-      const newW = Math.max(240, startW - dx);
+      // bottom-right: width grows rightward, height grows downward
+      const newW = Math.max(240, startW + dx);
       const newH = Math.max(200, startH + dy);
       panel.style.width = newW + 'px';
       panel.style.height = newH + 'px';
-      panel.style.left = (startLeft + dx) + 'px';
       e.preventDefault();
     }
     function onResizeEnd() {
