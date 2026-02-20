@@ -316,7 +316,8 @@
         setTimeout(() => panelAction = false, 100);
         const newEl = chain[i];
         if (newEl && newEl.tagName !== 'BODY') {
-          selectedEl.classList.remove('sn-selected');
+          // Clear ALL sn-selected (safety net for stale highlights)
+          document.querySelectorAll('.sn-selected').forEach(el => el.classList.remove('sn-selected'));
           selectedEl = newEl;
           selectedEl.classList.add('sn-selected');
           updateDisplay();
@@ -360,7 +361,8 @@
     if (!target) return;
     target.classList.remove('sn-hover');
 
-    if (selectedEl) selectedEl.classList.remove('sn-selected');
+    // Clear ALL sn-selected (safety net)
+    document.querySelectorAll('.sn-selected').forEach(el => el.classList.remove('sn-selected'));
     selectedEl = target;
     selectedEl.classList.add('sn-selected');
     updateDisplay();
