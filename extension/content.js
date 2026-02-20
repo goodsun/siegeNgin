@@ -653,6 +653,46 @@
     el._timer = setTimeout(() => { el.style.display = 'none'; }, 10000);
   }
 
+  // --- Execute actions (form fill etc.) ---
+  function executeActions(actions) {
+    let filled = 0, failed = 0;
+    for (const act of actions) {
+      try {
+        const el = document.querySelector(act.selector);
+        if (!el) { console.warn('[siegeNgin] selector not found:', act.selector); failed++; continue; }
+
+        if (act.action === 'click') {
+          el.click();
+          filled++;
+        } else if (act.action === 'check') {
+          el.checked = !!act.value;
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          filled++;
+        } else {
+          // Default: set value (input/textarea/select)
+          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+            el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype :
+            el.tagName === 'SELECT' ? window.HTMLSelectElement.prototype :
+            window.HTMLInputElement.prototype, 'value'
+          )?.set;
+          if (nativeInputValueSetter) {
+            nativeInputValueSetter.call(el, act.value);
+          } else {
+            el.value = act.value;
+          }
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          filled++;
+        }
+      } catch (e) {
+        console.error('[siegeNgin] action error:', act, e);
+        failed++;
+      }
+    }
+    const msg = `✅ ${filled}件入力完了` + (failed ? ` / ❌ ${failed}件失敗` : '');
+    showSpeech(msg);
+  }
+
   // --- Poll for response ---
   function pollForResponse(attempts = 0) {
     if (attempts > 30) { showSpeech('ちょっと時間かかってるかも... 💦'); return; }
@@ -665,6 +705,10 @@
         });
         if (resp.status === 200 && resp.data && resp.data.message) {
           showSpeech(resp.data.message);
+          // Execute actions if present
+          if (resp.data.actions && Array.isArray(resp.data.actions)) {
+            executeActions(resp.data.actions);
+          }
           return;
         }
       } catch (e) {}
