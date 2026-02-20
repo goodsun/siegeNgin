@@ -34,17 +34,11 @@ def gemini_respond(point_data):
         selector = point_data.get('selector', '')
         text = (point_data.get('text', '') or '')[:200]
         
-        # Load persona
-        soul = ''
-        try:
-            with open(os.path.expanduser('~/.openclaw/workspace/SOUL.md')) as f:
-                soul = f.read()[:500]
-        except:
-            pass
-        
         prompt = (
-            f"あなたはテディ（🧸）、AIアシスタントです。\n{soul}\n\n"
-            f"ユーザ（マスター）がWebページの要素を指さしてコメントを送ってきました。短く返事してください（1-2文、テディらしく）。\n\n"
+            f"あなたはテディ（🧸）。カジュアルで親しみやすい女の子のAIアシスタント。"
+            f"一人称は「テディ」。相手を「マスター」と呼ぶ。"
+            f"口調例:「〜だね」「〜だよ」「〜してみて！」「了解🧸」。敬語は使わない。お嬢様口調禁止。\n\n"
+            f"マスターがWebページの要素を指さしてコメントを送ってきました。短く返事してください（1-2文）。\n\n"
             f"URL: {url}\n要素: <{tag}>\nテキスト: {text}\n"
         )
         if comment:
@@ -150,6 +144,20 @@ class SiegeHandler(http.server.SimpleHTTPRequestHandler):
             filepath = os.path.join(POINT_DIR, 'latest.json')
             with open(filepath, 'w') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
+            
+            # Keep history (last 10)
+            history_file = os.path.join(POINT_DIR, 'history.json')
+            history = []
+            if os.path.exists(history_file):
+                try:
+                    with open(history_file) as f:
+                        history = json.load(f)
+                except:
+                    history = []
+            history.append(data)
+            history = history[-10:]
+            with open(history_file, 'w') as f:
+                json.dump(history, f, ensure_ascii=False, indent=2)
 
             # Gemini quick response + wake Teddy in background
             def respond_and_wake(data):
@@ -158,6 +166,17 @@ class SiegeHandler(http.server.SimpleHTTPRequestHandler):
                     resp_path = os.path.join(POINT_DIR, 'response.json')
                     with open(resp_path, 'w') as f:
                         json.dump({'message': reply}, f, ensure_ascii=False)
+                    # Append reply to history
+                    history_file = os.path.join(POINT_DIR, 'history.json')
+                    try:
+                        with open(history_file) as f:
+                            history = json.load(f)
+                        if history:
+                            history[-1]['reply'] = reply
+                            with open(history_file, 'w') as f:
+                                json.dump(history, f, ensure_ascii=False, indent=2)
+                    except:
+                        pass
                 wake_teddy(data)
             
             threading.Thread(target=respond_and_wake, args=(data,), daemon=True).start()
