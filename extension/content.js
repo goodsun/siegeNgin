@@ -382,6 +382,7 @@
       tag: ei.tag,
       selector: ei.selector,
       text: ei.text?.slice(0, 500),
+      html: selectedEl?.innerHTML?.slice(0, 5000) || null,
       attributes: ei.attributes,
     };
     try {
