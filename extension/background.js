@@ -57,8 +57,9 @@ async function handleAPI(msg) {
     console.log('[siegeNgin] Session token saved');
   }
 
-  // Handle 401 responses (clear invalid session token)
-  if (resp.status === 401) {
+  // Handle 401 responses — only clear session if NOT an OTP attempt
+  // (OTP failure shouldn't invalidate an existing session)
+  if (resp.status === 401 && !otpToken) {
     await chrome.storage.local.remove('sn_session_token');
     console.log('[siegeNgin] Session token cleared due to 401');
   }

@@ -160,7 +160,8 @@
     window.removeEventListener('mouseup', onDragEnd, true);
   }
   header.addEventListener('mousedown', (e) => {
-    if (e.target.id === 'sn-panel-close') return;
+    // Don't start drag from interactive elements
+    if (e.target.closest('button, #sn-size-controls')) return;
     dragging = true;
     const rect = panel.getBoundingClientRect();
     dragX = e.clientX - rect.left;
@@ -278,11 +279,31 @@
       return;
     }
     const ei = getElementInfo(selectedEl);
-    info.innerHTML = `
-      <div class="tag-line"><span class="tag">${ei.tag}</span>${ei.attributes.id ? `<span style="color:#6a5a8a;font-size:0.7rem;">#${ei.attributes.id}</span>` : ''}</div>
-      <span class="selector">${ei.selector}</span>
-      ${ei.text ? `<div class="text-preview">${ei.text.slice(0, 200)}</div>` : ''}
-    `;
+    // Build info display safely (no innerHTML with untrusted data)
+    info.innerHTML = '';
+    const tagLine = document.createElement('div');
+    tagLine.className = 'tag-line';
+    const tagSpan = document.createElement('span');
+    tagSpan.className = 'tag';
+    tagSpan.textContent = ei.tag;
+    tagLine.appendChild(tagSpan);
+    if (ei.attributes.id) {
+      const idSpan = document.createElement('span');
+      idSpan.style.cssText = 'color:#6a5a8a;font-size:0.7rem;';
+      idSpan.textContent = '#' + ei.attributes.id;
+      tagLine.appendChild(idSpan);
+    }
+    info.appendChild(tagLine);
+    const selSpan = document.createElement('span');
+    selSpan.className = 'selector';
+    selSpan.textContent = ei.selector;
+    info.appendChild(selSpan);
+    if (ei.text) {
+      const textDiv = document.createElement('div');
+      textDiv.className = 'text-preview';
+      textDiv.textContent = ei.text.slice(0, 200);
+      info.appendChild(textDiv);
+    }
     // Breadcrumb (from body, max 8 nearest)
     let chain = getAncestorChain(selectedEl);
     if (chain.length > 8) {
@@ -632,7 +653,7 @@
           el.dispatchEvent(new Event('input', { bubbles: true }));
           el.dispatchEvent(new Event('change', { bubbles: true }));
 
-          try { $(el).trigger('change'); } catch(_) {}
+          if (typeof $ === 'function') { try { $(el).trigger('change'); } catch(_) {} }
           filled++;
         }
       } catch (e) {

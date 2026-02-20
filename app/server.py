@@ -6,8 +6,6 @@ import os
 import threading
 import secrets
 import time
-import string
-import random
 import hmac
 import fcntl
 import re
@@ -69,8 +67,6 @@ ALLOWED_EXTENSION_ORIGINS = [
     os.environ.get('SIEGENGIN_EXTENSION_IDS', 'djhifbmcbadffjmjlafecagbckdpnilg,glponghkpiackgdpmhpeplfiblhjgmfd').split(',')
 ]
 
-# GATE_TOKEN environment variable is abolished - replaced by two-factor auth
-# GATE_TOKEN = os.environ.get('SIEGENGIN_GATE_TOKEN', '')  # REMOVED
 
 
 def check_otp_rate_limit():
@@ -268,29 +264,6 @@ def get_hooks_token():
     except Exception:
         return None
 
-
-def send_hooks_wake(message):
-    """Send wake event to OpenClaw gateway via hooks endpoint (localhost only)."""
-    try:
-        token = get_hooks_token()
-        if not token:
-            print("[siegeNgin] No hooks token found")
-            return
-
-        body = json.dumps({"text": message, "mode": "now"}).encode()
-        req = urllib.request.Request(
-            f"http://127.0.0.1:{GATEWAY_PORT}/hooks/wake",
-            data=body,
-            headers={
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {token}',
-            },
-            method='POST'
-        )
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            print(f"[siegeNgin] Wake sent: {resp.status}")
-    except Exception as e:
-        print(f"[siegeNgin] Wake failed: {e}")
 
 
 def notify_otp(otp):
@@ -571,16 +544,15 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
                     stripped = {k: v for k, v in data.items() if k != 'actions'}
                     self.send_json(200, stripped)
                     return
-                # Atomic consume: rename then read (prevents double-delivery race)
+                # Atomic consume: rename prevents double-delivery race
                 try:
                     os.rename(filepath, consumed)
                 except FileNotFoundError:
                     # Already consumed by another request
                     self.send_json(204, {})
                     return
+                # Use data from first read (already parsed above)
                 try:
-                    with open(consumed) as f:
-                        data = json.load(f)
                     os.remove(consumed)
                 except Exception:
                     pass
