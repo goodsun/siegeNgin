@@ -257,14 +257,16 @@
   if (savedCommentH) { commentEl.style.height = savedCommentH; commentEl.style.flex = 'none'; }
 
   // --- Panel close ---
-  document.getElementById('sn-panel-close').addEventListener('click', () => {
+  function handleClose() {
     cleanupListeners();
     panel.remove();
     window.__siegeNginActive = false;
     document.querySelectorAll('.sn-hover, .sn-selected').forEach(el => {
       el.classList.remove('sn-hover', 'sn-selected');
     });
-  });
+  }
+  document.getElementById('sn-panel-close').addEventListener('click', handleClose);
+  document.getElementById('sn-panel-close').addEventListener('mousedown', (e) => e.stopPropagation());
 
   // --- Update selection display ---
   function updateDisplay() {
@@ -361,19 +363,25 @@
   window.__siegeNginCleanup = cleanupListeners;
 
   // --- XPath copy ---
-  document.getElementById('sn-btn-xpath').addEventListener('click', (e) => {
+  function handleXPath(e) {
     e.stopPropagation();
+    e.stopImmediatePropagation();
     if (!selectedEl) return;
     navigator.clipboard.writeText(getXPath(selectedEl));
     showSpeech('XPath コピーしました 📋');
-  });
+  }
+  document.getElementById('sn-btn-xpath').addEventListener('click', handleXPath);
+  document.getElementById('sn-btn-xpath').addEventListener('mousedown', (e) => e.stopPropagation());
 
   // --- Send to Teddy ---
-  document.getElementById('sn-btn-send').addEventListener('click', async (e) => {
+  async function handleSend(e) {
     e.stopPropagation();
+    e.stopImmediatePropagation();
     if (!selectedEl) { showSpeech('要素を選択してね'); return; }
     await sendPointData();
-  });
+  }
+  document.getElementById('sn-btn-send').addEventListener('click', handleSend);
+  document.getElementById('sn-btn-send').addEventListener('mousedown', (e) => e.stopPropagation());
 
   async function sendPointData(otpToken = null) {
     const ei = getElementInfo(selectedEl);
