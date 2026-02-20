@@ -56,7 +56,7 @@
 
 #sn-selection-info {
   padding: 10px 14px;
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   border-bottom: 1px solid #2a2a3a;
   min-height: 60px;
 }
@@ -65,7 +65,7 @@
   display: inline-block;
   background: #ff8c42;
   color: #fff;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   padding: 1px 6px;
   border-radius: 4px;
   font-weight: 600;
@@ -78,7 +78,7 @@
   word-break: break-all;
   display: block;
   margin-top: 4px;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   max-height: 2.8em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -86,7 +86,7 @@
 
 #sn-selection-info .text-preview {
   color: #8a7aaa;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   margin-top: 4px;
   max-height: 2.4em;
   overflow: hidden;
@@ -103,7 +103,7 @@
 }
 
 #sn-breadcrumb .crumb {
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   padding: 1px 5px;
   border-radius: 3px;
   background: #1a1a2a;
@@ -137,7 +137,7 @@
   border: none;
   border-bottom: 1px solid #2a2a3a;
   color: #e0dce8;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-family: inherit;
   resize: none;
   height: 80px;
@@ -176,7 +176,7 @@
 
 #sn-speech {
   padding: 8px 14px;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: #e0dce8;
   background: #0a0a14;
   display: none;
