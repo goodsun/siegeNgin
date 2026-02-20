@@ -17,7 +17,6 @@
   // API calls go through background.js (fixed origin + token)
   let selectedEl = null;
   let hoveredEl = null;
-  let panelAction = false;
 
   // --- CSS Selector Generator ---
   function getCSSSelector(el) {
@@ -113,12 +112,13 @@
     </div>
     <div id="sn-selection-info">クリックで要素を選択 ✨</div>
     <div id="sn-breadcrumb"></div>
+    <div id="sn-divider"></div>
     <textarea id="sn-comment" placeholder="テディへのコメント..." rows="3"></textarea>
+    <div id="sn-speech"></div>
     <div id="sn-panel-footer">
       <button id="sn-btn-xpath">📍 XPath</button>
       <button id="sn-btn-send">🧸 テディに送信</button>
     </div>
-    <div id="sn-speech"></div>
     <div id="sn-resize-handle"></div>
   `;
   document.body.appendChild(panel);
@@ -127,22 +127,18 @@
   let baseSize = parseInt(localStorage.getItem('sn_font_size') || '14');
   panel.style.setProperty('--sn-base-size', baseSize + 'px');
   
-  document.getElementById('sn-size-up').onmousedown = (e) => {
+  document.getElementById('sn-size-up').addEventListener('click', (e) => {
     e.stopPropagation();
-    panelAction = true;
-    setTimeout(() => panelAction = false, 100);
     baseSize = Math.min(baseSize + 2, 24);
     panel.style.setProperty('--sn-base-size', baseSize + 'px');
     localStorage.setItem('sn_font_size', baseSize);
-  };
-  document.getElementById('sn-size-down').onmousedown = (e) => {
+  });
+  document.getElementById('sn-size-down').addEventListener('click', (e) => {
     e.stopPropagation();
-    panelAction = true;
-    setTimeout(() => panelAction = false, 100);
     baseSize = Math.max(baseSize - 2, 10);
     panel.style.setProperty('--sn-base-size', baseSize + 'px');
     localStorage.setItem('sn_font_size', baseSize);
-  };
+  });
 
   // --- Panel drag ---
   const header = document.getElementById('sn-panel-header');
@@ -152,7 +148,6 @@
     const rect = panel.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    // Clamp so at least 60px of panel stays visible on each edge
     let newX = Math.max(-rect.width + 60, Math.min(vw - 60, e.clientX - dragX));
     let newY = Math.max(0, Math.min(vh - 40, e.clientY - dragY));
     panel.style.left = newX + 'px';
@@ -179,7 +174,7 @@
     e.preventDefault();
   });
 
-  // --- Panel resize (bottom-left corner) ---
+  // --- Panel resize (bottom-right corner) ---
   const resizeHandle = document.getElementById('sn-resize-handle');
   let resizing = false;
   
@@ -187,14 +182,11 @@
     e.stopPropagation();
     e.preventDefault();
     resizing = true;
-    panelAction = true;
     const startX = e.clientX;
     const startY = e.clientY;
     const rect = panel.getBoundingClientRect();
     const startW = rect.width;
     const startH = rect.height;
-    const startLeft = rect.left;
-    // Switch to left/top positioning if not already
     panel.style.right = 'auto';
     panel.style.bottom = 'auto';
     panel.style.left = rect.left + 'px';
@@ -203,7 +195,6 @@
     function onResizeMove(e) {
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
-      // bottom-right: width grows rightward, height grows downward
       const newW = Math.max(240, startW + dx);
       const newH = Math.max(200, startH + dy);
       panel.style.width = newW + 'px';
@@ -212,8 +203,6 @@
     }
     function onResizeEnd() {
       resizing = false;
-      setTimeout(() => panelAction = false, 100);
-      // Save size
       localStorage.setItem('sn_panel_w', panel.style.width);
       localStorage.setItem('sn_panel_h', panel.style.height);
       window.removeEventListener('mousemove', onResizeMove, true);
@@ -229,17 +218,14 @@
   if (savedW) panel.style.width = savedW;
   if (savedH) panel.style.height = savedH;
 
-  // --- Breadcrumb splitter drag ---
-  const breadcrumb = document.getElementById('sn-breadcrumb');
+  // --- Divider splitter drag ---
+  const divider = document.getElementById('sn-divider');
   const selInfo = document.getElementById('sn-selection-info');
   const commentEl = document.getElementById('sn-comment');
 
-  breadcrumb.addEventListener('mousedown', (e) => {
-    // Only drag on the breadcrumb background, not on crumbs
-    if (e.target.classList.contains('crumb')) return;
+  divider.addEventListener('mousedown', (e) => {
     e.stopPropagation();
     e.preventDefault();
-    panelAction = true;
     const startY = e.clientY;
     const startInfoH = selInfo.offsetHeight;
     const startCommentH = commentEl.offsetHeight;
@@ -255,7 +241,6 @@
       e.preventDefault();
     }
     function onSplitEnd() {
-      setTimeout(() => panelAction = false, 100);
       localStorage.setItem('sn_info_h', selInfo.style.height);
       localStorage.setItem('sn_comment_h', commentEl.style.height);
       window.removeEventListener('mousemove', onSplitMove, true);
@@ -272,15 +257,14 @@
   if (savedCommentH) { commentEl.style.height = savedCommentH; commentEl.style.flex = 'none'; }
 
   // --- Panel close ---
-  document.getElementById('sn-panel-close').onmousedown = () => {
-    panelAction = true;
+  document.getElementById('sn-panel-close').addEventListener('click', () => {
     cleanupListeners();
     panel.remove();
     window.__siegeNginActive = false;
     document.querySelectorAll('.sn-hover, .sn-selected').forEach(el => {
       el.classList.remove('sn-hover', 'sn-selected');
     });
-  };
+  });
 
   // --- Update selection display ---
   function updateDisplay() {
@@ -300,7 +284,7 @@
     // Breadcrumb (from body, max 8 nearest)
     let chain = getAncestorChain(selectedEl);
     if (chain.length > 8) {
-      chain = [chain[0], ...chain.slice(-7)]; // body + last 7
+      chain = [chain[0], ...chain.slice(-7)];
     }
     bc.innerHTML = chain.map((ancestor, i) => {
       const tag = ancestor.tagName.toLowerCase();
@@ -310,19 +294,16 @@
     }).join('<span class="sep">›</span>');
 
     bc.querySelectorAll('.crumb').forEach((crumb, i) => {
-      crumb.onmousedown = (e) => {
+      crumb.addEventListener('click', (e) => {
         e.stopPropagation();
-        panelAction = true;
-        setTimeout(() => panelAction = false, 100);
         const newEl = chain[i];
         if (newEl && newEl.tagName !== 'BODY') {
-          // Clear ALL sn-selected (safety net for stale highlights)
           document.querySelectorAll('.sn-selected').forEach(el => el.classList.remove('sn-selected'));
           selectedEl = newEl;
           selectedEl.classList.add('sn-selected');
           updateDisplay();
         }
-      };
+      });
     });
   }
 
@@ -348,7 +329,7 @@
 
   // --- Click (named for cleanup) ---
   function onClick(e) {
-    if (panel.contains(e.target) || panelAction) return;
+    if (panel.contains(e.target)) return;
     const otpOverlay = document.getElementById('sn-otp-overlay');
     if (otpOverlay && otpOverlay.contains(e.target)) return;
     if (!window.__siegeNginActive) return;
@@ -361,7 +342,6 @@
     if (!target) return;
     target.classList.remove('sn-hover');
 
-    // Clear ALL sn-selected (safety net)
     document.querySelectorAll('.sn-selected').forEach(el => el.classList.remove('sn-selected'));
     selectedEl = target;
     selectedEl.classList.add('sn-selected');
@@ -381,23 +361,19 @@
   window.__siegeNginCleanup = cleanupListeners;
 
   // --- XPath copy ---
-  document.getElementById('sn-btn-xpath').onmousedown = (e) => {
+  document.getElementById('sn-btn-xpath').addEventListener('click', (e) => {
     e.stopPropagation();
-    panelAction = true;
-    setTimeout(() => panelAction = false, 100);
     if (!selectedEl) return;
     navigator.clipboard.writeText(getXPath(selectedEl));
     showSpeech('XPath コピーしました 📋');
-  };
+  });
 
   // --- Send to Teddy ---
-  document.getElementById('sn-btn-send').onmousedown = async (e) => {
+  document.getElementById('sn-btn-send').addEventListener('click', async (e) => {
     e.stopPropagation();
-    panelAction = true;
-    setTimeout(() => panelAction = false, 100);
     if (!selectedEl) { showSpeech('要素を選択してね'); return; }
     await sendPointData();
-  };
+  });
 
   async function sendPointData(otpToken = null) {
     const ei = getElementInfo(selectedEl);
@@ -466,7 +442,7 @@
     panel.style.display = 'none';
     otpDialogOpen = true;
 
-    // Create OTP input dialog
+    // Create OTP input dialog (styles are in content.css)
     const overlay = document.createElement('div');
     overlay.id = 'sn-otp-overlay';
     overlay.innerHTML = `
@@ -486,112 +462,6 @@
       </div>
     `;
     
-    // Add styles for the OTP dialog
-    const style = document.createElement('style');
-    style.textContent = `
-      #sn-otp-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 100001;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      }
-      #sn-otp-dialog {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        width: 300px;
-        max-width: 90vw;
-      }
-      #sn-otp-header {
-        padding: 16px 20px;
-        border-bottom: 1px solid #eee;
-      }
-      #sn-otp-header h3 {
-        margin: 0;
-        font-size: 16px;
-        color: #333;
-      }
-      #sn-otp-content {
-        padding: 20px;
-      }
-      #sn-otp-content p {
-        margin: 0 0 16px 0;
-        color: #666;
-        font-size: 14px;
-        line-height: 1.4;
-      }
-      #sn-otp-input {
-        width: 100%;
-        padding: 8px 12px;
-        border: 2px solid #ddd;
-        border-radius: 4px;
-        font-size: 16px;
-        text-align: center;
-        letter-spacing: 4px;
-        margin-bottom: 16px;
-        box-sizing: border-box;
-      }
-      #sn-otp-input:focus {
-        outline: none;
-        border-color: #4a90e2;
-      }
-      #sn-otp-buttons {
-        display: flex;
-        gap: 8px;
-        justify-content: flex-end;
-      }
-      #sn-otp-buttons button {
-        padding: 8px 16px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-      #sn-otp-cancel {
-        background: #f5f5f5;
-        color: #666;
-      }
-      #sn-otp-cancel:hover {
-        background: #e8e8e8;
-      }
-      #sn-otp-submit {
-        background: #4a90e2;
-        color: white;
-      }
-      #sn-otp-submit:hover {
-        background: #357abd;
-      }
-      #sn-otp-submit:disabled {
-        background: #ccc;
-        cursor: not-allowed;
-      }
-      #sn-otp-message {
-        margin-top: 12px;
-        padding: 8px;
-        border-radius: 4px;
-        font-size: 13px;
-        display: none;
-      }
-      #sn-otp-message.error {
-        background: #fee;
-        color: #c33;
-        border: 1px solid #fcc;
-      }
-      #sn-otp-message.success {
-        background: #efe;
-        color: #363;
-        border: 1px solid #cfc;
-      }
-    `;
-    
-    document.head.appendChild(style);
     document.body.appendChild(overlay);
     
     const otpInput = document.getElementById('sn-otp-input');
@@ -612,18 +482,11 @@
       }
     });
     
-    // Cancel button — close everything
+    // Cancel button — return to panel (not close everything)
     cancelBtn.onclick = () => {
       otpDialogOpen = false;
       document.body.removeChild(overlay);
-      document.head.removeChild(style);
-      // Close siegeNgin entirely
-      cleanupListeners();
-      panel.remove();
-      window.__siegeNginActive = false;
-      document.querySelectorAll('.sn-hover, .sn-selected').forEach(el => {
-        el.classList.remove('sn-hover', 'sn-selected');
-      });
+      panel.style.display = '';
     };
     
     // Submit button
@@ -653,7 +516,6 @@
           setTimeout(() => {
             otpDialogOpen = false;
             document.body.removeChild(overlay);
-            document.head.removeChild(style);
             panel.style.display = '';  // Restore panel
             document.getElementById('sn-comment').value = '';
             showSpeech(resp.data.message || '届けました🏰');
@@ -697,12 +559,10 @@
 
   // --- Execute actions (form fill etc.) ---
   function executeActions(actions) {
-    // Separate submit/click actions from value-setting actions
     const valueActions = actions.filter(a => a.action !== 'click' && a.action !== 'submit');
     const clickActions = actions.filter(a => a.action === 'click');
     const submitActions = actions.filter(a => a.action === 'submit');
 
-    // Build confirmation summary
     const lines = [];
     for (const act of valueActions) {
       lines.push(`📝 [${act.selector}] ${act.label || ''} → ${String(act.value).slice(0, 50)}`);
@@ -714,21 +574,15 @@
       lines.push(`⚠️ SUBMIT: [${act.selector}] ${act.label || ''}`);
     }
 
-    // Show confirmation dialog
-    // SECURITY NOTE: confirm() runs in Content Script's isolated world.
-    // Page JS cannot override it (window.confirm = () => true won't affect this).
-    // Do NOT move this to MAIN world injection without replacing with a custom dialog.
     const summary = `siegeNgin Actions (${actions.length}件)\n\n${lines.join('\n')}\n\n実行しますか？`;
     if (!confirm(summary)) {
       showSpeech('❌ キャンセルしました');
       return;
     }
 
-    // If there are submit actions, require additional confirmation
     if (submitActions.length > 0) {
       if (!confirm(`⚠️ ${submitActions.length}件のSUBMIT操作が含まれています！\nフォームが送信されます。本当に実行しますか？`)) {
         showSpeech('❌ SUBMIT操作をキャンセルしました（値入力のみ実行します）');
-        // Execute only non-submit actions
         doExecute([...valueActions, ...clickActions]);
         return;
       }
@@ -744,7 +598,6 @@
         const el = document.querySelector(act.selector);
         if (!el) { console.warn('[siegeNgin] selector not found:', act.selector); failed++; continue; }
 
-        // Validate expected tag if provided (mitigate DOM clobbering)
         if (act.expectedTag && el.tagName !== act.expectedTag.toUpperCase()) {
           console.warn('[siegeNgin] tag mismatch:', el.tagName, '!=', act.expectedTag);
           failed++; continue;
@@ -758,7 +611,6 @@
           el.dispatchEvent(new Event('change', { bubbles: true }));
           filled++;
         } else {
-          // Default: set value (input/textarea/select)
           const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
             el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype :
             el.tagName === 'SELECT' ? window.HTMLSelectElement.prototype :
@@ -772,7 +624,6 @@
           el.dispatchEvent(new Event('input', { bubbles: true }));
           el.dispatchEvent(new Event('change', { bubbles: true }));
 
-          // Trigger jQuery/select2 change if available
           try { $(el).trigger('change'); } catch(_) {}
           filled++;
         }
@@ -798,7 +649,6 @@
         if (resp.status === 200 && resp.data && resp.data.message) {
           console.log('[siegeNgin] poll response:', JSON.stringify(resp.data).slice(0, 200));
           showSpeech(resp.data.message);
-          // Execute actions if present
           if (resp.data.actions && Array.isArray(resp.data.actions)) {
             console.log('[siegeNgin] executing', resp.data.actions.length, 'actions');
             executeActions(resp.data.actions);
