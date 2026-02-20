@@ -15,6 +15,7 @@
   top: 20px;
   right: 20px;
   width: 340px;
+  font-size: var(--sn-base-size, 14px);
   background: #12121e;
   border: 1px solid #ff8c42;
   border-radius: 12px;
@@ -49,10 +50,31 @@
   background: none;
   border: none;
   color: #6a5a8a;
-  font-size: 1.2rem;
+  font-size: 1.2em;
   cursor: pointer;
 }
 #sn-panel-close:hover { color: #ff5050; }
+
+#sn-size-controls {
+  display: flex;
+  gap: 2px;
+}
+
+#sn-size-controls button {
+  background: none;
+  border: 1px solid #3a2a5a;
+  color: #8a7aaa;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 0.9em;
+  line-height: 1;
+}
+#sn-size-controls button:hover {
+  border-color: #ff8c42;
+  color: #ff8c42;
+}
 
 #sn-selection-info {
   padding: 10px 14px;

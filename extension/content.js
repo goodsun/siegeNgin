@@ -102,6 +102,10 @@
   panel.innerHTML = `
     <div id="sn-panel-header">
       <h3>🏰 siegeNgin</h3>
+      <div id="sn-size-controls">
+        <button id="sn-size-down">A-</button>
+        <button id="sn-size-up">A+</button>
+      </div>
       <button id="sn-panel-close">✕</button>
     </div>
     <div id="sn-selection-info">クリックで要素を選択 ✨</div>
@@ -114,6 +118,27 @@
     <div id="sn-speech"></div>
   `;
   document.body.appendChild(panel);
+
+  // --- Font size control ---
+  let baseSize = parseInt(localStorage.getItem('sn_font_size') || '14');
+  panel.style.setProperty('--sn-base-size', baseSize + 'px');
+  
+  document.getElementById('sn-size-up').onmousedown = (e) => {
+    e.stopPropagation();
+    panelAction = true;
+    setTimeout(() => panelAction = false, 100);
+    baseSize = Math.min(baseSize + 2, 24);
+    panel.style.setProperty('--sn-base-size', baseSize + 'px');
+    localStorage.setItem('sn_font_size', baseSize);
+  };
+  document.getElementById('sn-size-down').onmousedown = (e) => {
+    e.stopPropagation();
+    panelAction = true;
+    setTimeout(() => panelAction = false, 100);
+    baseSize = Math.max(baseSize - 2, 10);
+    panel.style.setProperty('--sn-base-size', baseSize + 'px');
+    localStorage.setItem('sn_font_size', baseSize);
+  };
 
   // --- Panel drag ---
   const header = document.getElementById('sn-panel-header');
