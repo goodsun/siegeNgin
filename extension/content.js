@@ -220,6 +220,48 @@
   if (savedW) panel.style.width = savedW;
   if (savedH) panel.style.height = savedH;
 
+  // --- Breadcrumb splitter drag ---
+  const breadcrumb = document.getElementById('sn-breadcrumb');
+  const selInfo = document.getElementById('sn-selection-info');
+  const commentEl = document.getElementById('sn-comment');
+
+  breadcrumb.addEventListener('mousedown', (e) => {
+    // Only drag on the breadcrumb background, not on crumbs
+    if (e.target.classList.contains('crumb')) return;
+    e.stopPropagation();
+    e.preventDefault();
+    panelAction = true;
+    const startY = e.clientY;
+    const startInfoH = selInfo.offsetHeight;
+    const startCommentH = commentEl.offsetHeight;
+
+    function onSplitMove(e) {
+      const dy = e.clientY - startY;
+      const newInfoH = Math.max(40, startInfoH + dy);
+      const newCommentH = Math.max(40, startCommentH - dy);
+      selInfo.style.height = newInfoH + 'px';
+      selInfo.style.flex = 'none';
+      commentEl.style.height = newCommentH + 'px';
+      commentEl.style.flex = 'none';
+      e.preventDefault();
+    }
+    function onSplitEnd() {
+      setTimeout(() => panelAction = false, 100);
+      localStorage.setItem('sn_info_h', selInfo.style.height);
+      localStorage.setItem('sn_comment_h', commentEl.style.height);
+      window.removeEventListener('mousemove', onSplitMove, true);
+      window.removeEventListener('mouseup', onSplitEnd, true);
+    }
+    window.addEventListener('mousemove', onSplitMove, true);
+    window.addEventListener('mouseup', onSplitEnd, true);
+  });
+
+  // Restore saved split
+  const savedInfoH = localStorage.getItem('sn_info_h');
+  const savedCommentH = localStorage.getItem('sn_comment_h');
+  if (savedInfoH) { selInfo.style.height = savedInfoH; selInfo.style.flex = 'none'; }
+  if (savedCommentH) { commentEl.style.height = savedCommentH; commentEl.style.flex = 'none'; }
+
   // --- Panel close ---
   document.getElementById('sn-panel-close').onmousedown = () => {
     panelAction = true;

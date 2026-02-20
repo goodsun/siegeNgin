@@ -85,9 +85,8 @@
   padding: 10px 14px;
   font-size: 1em;
   border-bottom: 1px solid #2a2a3a;
-  min-height: 60px;
-  flex-shrink: 0;
-  overflow: hidden;
+  min-height: 40px;
+  overflow-y: auto;
 }
 
 #sn-selection-info .tag {
@@ -130,6 +129,12 @@
   align-items: center;
   border-bottom: 1px solid #2a2a3a;
   flex-shrink: 0;
+  cursor: ns-resize;
+  user-select: none;
+}
+
+#sn-breadcrumb:hover {
+  background: rgba(255, 140, 66, 0.05);
 }
 
 #sn-breadcrumb .crumb {
