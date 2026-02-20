@@ -52,6 +52,9 @@
   color: #ff8c42;
   white-space: nowrap;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 #sn-header-right {
