@@ -283,10 +283,9 @@
     }
     const ei = getElementInfo(selectedEl);
     info.innerHTML = `
-      <span class="tag">${ei.tag}</span>
-      ${ei.attributes.id ? `<span style="color:#6a5a8a;font-size:0.7rem;">#${ei.attributes.id}</span>` : ''}
+      <div class="tag-line"><span class="tag">${ei.tag}</span>${ei.attributes.id ? `<span style="color:#6a5a8a;font-size:0.7rem;">#${ei.attributes.id}</span>` : ''}</div>
       <span class="selector">${ei.selector}</span>
-      ${ei.text ? `<div class="text-preview">${ei.text.slice(0, 120)}</div>` : ''}
+      ${ei.text ? `<div class="text-preview">${ei.text.slice(0, 200)}</div>` : ''}
     `;
     // Breadcrumb (from body, max 8 nearest)
     let chain = getAncestorChain(selectedEl);

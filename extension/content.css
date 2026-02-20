@@ -86,7 +86,13 @@
   font-size: 1em;
   border-bottom: 1px solid #2a2a3a;
   min-height: 40px;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#sn-selection-info .tag-line {
+  flex-shrink: 0;
 }
 
 #sn-selection-info .tag {
@@ -107,17 +113,18 @@
   display: block;
   margin-top: 4px;
   font-size: 0.9em;
-  max-height: 2.8em;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 #sn-selection-info .text-preview {
   color: #8a7aaa;
   font-size: 0.9em;
   margin-top: 4px;
-  max-height: 2.4em;
-  overflow: hidden;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 /* Breadcrumb */
