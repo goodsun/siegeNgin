@@ -414,9 +414,9 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
 
     def handle_point(self):
         try:
-            # Content-Length limit: 64KB
+            # Content-Length limit: 512KB
             length = int(self.headers.get('Content-Length', 0))
-            if length > 65536:
+            if length > 524288:
                 self.send_json(413, {'error': 'payload too large'})
                 return None
 
