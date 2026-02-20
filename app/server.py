@@ -66,7 +66,7 @@ ALLOWED_ORIGINS = os.environ.get('SIEGENGIN_ALLOWED_ORIGINS', '').split(',')
 # Allowed Chrome extension IDs (comma-separated env, or default)
 ALLOWED_EXTENSION_ORIGINS = [
     f"chrome-extension://{eid.strip()}" for eid in
-    os.environ.get('SIEGENGIN_EXTENSION_IDS', 'djhifbmcbadffjmjlafecagbckdpnilg').split(',')
+    os.environ.get('SIEGENGIN_EXTENSION_IDS', 'djhifbmcbadffjmjlafecagbckdpnilg,glponghkpiackgdpmhpeplfiblhjgmfd').split(',')
 ]
 
 # GATE_TOKEN environment variable is abolished - replaced by two-factor auth

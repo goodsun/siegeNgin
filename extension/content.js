@@ -322,7 +322,7 @@
 
   // --- Hover ---
   document.addEventListener('mouseover', (e) => {
-    if (panel.contains(e.target)) return;
+    if (panel.contains(e.target) || otpDialogOpen) return;
     const target = findMeaningful(e.target, false);
     if (!target) return;
     if (hoveredEl && hoveredEl !== target) hoveredEl.classList.remove('sn-hover');
@@ -340,6 +340,7 @@
     if (panel.contains(e.target) || panelAction) return;
     if (!window.__siegeNginActive) return;
     if (dragging || resizing) return;
+    if (otpDialogOpen) return;
     e.preventDefault();
     e.stopImmediatePropagation();
 
@@ -432,9 +433,12 @@
     }
   }
 
+  let otpDialogOpen = false;
+
   function showOTPDialog(originalData) {
-    // Hide main panel while OTP dialog is open
+    // Hide main panel and disable click capture while OTP dialog is open
     panel.style.display = 'none';
+    otpDialogOpen = true;
 
     // Create OTP input dialog
     const overlay = document.createElement('div');
@@ -584,6 +588,7 @@
     
     // Cancel button — close everything
     cancelBtn.onclick = () => {
+      otpDialogOpen = false;
       document.body.removeChild(overlay);
       document.head.removeChild(style);
       // Close siegeNgin entirely
@@ -619,6 +624,7 @@
         if (resp.status === 200 && resp.data && resp.data.ok) {
           showOTPMessage('認証成功！送信しました', 'success');
           setTimeout(() => {
+            otpDialogOpen = false;
             document.body.removeChild(overlay);
             document.head.removeChild(style);
             panel.style.display = '';  // Restore panel
