@@ -433,6 +433,9 @@
   }
 
   function showOTPDialog(originalData) {
+    // Hide main panel while OTP dialog is open
+    panel.style.display = 'none';
+
     // Create OTP input dialog
     const overlay = document.createElement('div');
     overlay.id = 'sn-otp-overlay';
@@ -579,11 +582,16 @@
       }
     });
     
-    // Cancel button
+    // Cancel button — close everything
     cancelBtn.onclick = () => {
       document.body.removeChild(overlay);
       document.head.removeChild(style);
-      showSpeech('送信をキャンセルしました');
+      // Close siegeNgin entirely
+      panel.remove();
+      window.__siegeNginActive = false;
+      document.querySelectorAll('.sn-hover, .sn-selected').forEach(el => {
+        el.classList.remove('sn-hover', 'sn-selected');
+      });
     };
     
     // Submit button
@@ -613,6 +621,7 @@
           setTimeout(() => {
             document.body.removeChild(overlay);
             document.head.removeChild(style);
+            panel.style.display = '';  // Restore panel
             document.getElementById('sn-comment').value = '';
             showSpeech(resp.data.message || '届けました🏰');
             pollForResponse();
