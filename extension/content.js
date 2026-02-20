@@ -309,12 +309,21 @@
     if (chain.length > 8) {
       chain = [chain[0], ...chain.slice(-7)];
     }
-    bc.innerHTML = chain.map((ancestor, i) => {
-      const tag = ancestor.tagName.toLowerCase();
-      const id = ancestor.id ? `#${ancestor.id}` : '';
-      const isActive = ancestor === selectedEl;
-      return `<span class="crumb${isActive ? ' active' : ''}" data-idx="${i}">${tag}${id}</span>`;
-    }).join('<span class="sep">›</span>');
+    // Build breadcrumb safely (no innerHTML with untrusted id)
+    bc.innerHTML = '';
+    chain.forEach((ancestor, i) => {
+      if (i > 0) {
+        const sep = document.createElement('span');
+        sep.className = 'sep';
+        sep.textContent = '›';
+        bc.appendChild(sep);
+      }
+      const crumbEl = document.createElement('span');
+      crumbEl.className = 'crumb' + (ancestor === selectedEl ? ' active' : '');
+      crumbEl.dataset.idx = i;
+      crumbEl.textContent = ancestor.tagName.toLowerCase() + (ancestor.id ? '#' + ancestor.id : '');
+      bc.appendChild(crumbEl);
+    });
 
     bc.querySelectorAll('.crumb').forEach((crumb, i) => {
       crumb.addEventListener('click', (e) => {
