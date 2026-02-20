@@ -382,7 +382,7 @@
       tag: ei.tag,
       selector: ei.selector,
       text: ei.text?.slice(0, 500),
-      html: selectedEl?.innerHTML?.slice(0, 5000) || null,
+      html: selectedEl?.innerHTML?.slice(0, 50000) || null,
       attributes: ei.attributes,
     };
     try {
@@ -655,13 +655,52 @@
 
   // --- Execute actions (form fill etc.) ---
   function executeActions(actions) {
+    // Separate submit/click actions from value-setting actions
+    const valueActions = actions.filter(a => a.action !== 'click' && a.action !== 'submit');
+    const clickActions = actions.filter(a => a.action === 'click');
+    const submitActions = actions.filter(a => a.action === 'submit');
+
+    // Build confirmation summary
+    const lines = [];
+    for (const act of valueActions) {
+      const label = act.label || act.selector;
+      lines.push(`📝 ${label} → ${String(act.value).slice(0, 50)}`);
+    }
+    for (const act of clickActions) {
+      lines.push(`🖱️ click: ${act.label || act.selector}`);
+    }
+    for (const act of submitActions) {
+      lines.push(`⚠️ SUBMIT: ${act.label || act.selector}`);
+    }
+
+    // Show confirmation dialog
+    const summary = `siegeNgin Actions (${actions.length}件)\n\n${lines.join('\n')}\n\n実行しますか？`;
+    if (!confirm(summary)) {
+      showSpeech('❌ キャンセルしました');
+      return;
+    }
+
+    // If there are submit actions, require additional confirmation
+    if (submitActions.length > 0) {
+      if (!confirm(`⚠️ ${submitActions.length}件のSUBMIT操作が含まれています！\nフォームが送信されます。本当に実行しますか？`)) {
+        showSpeech('❌ SUBMIT操作をキャンセルしました（値入力のみ実行します）');
+        // Execute only non-submit actions
+        doExecute([...valueActions, ...clickActions]);
+        return;
+      }
+    }
+
+    doExecute(actions);
+  }
+
+  function doExecute(actions) {
     let filled = 0, failed = 0;
     for (const act of actions) {
       try {
         const el = document.querySelector(act.selector);
         if (!el) { console.warn('[siegeNgin] selector not found:', act.selector); failed++; continue; }
 
-        if (act.action === 'click') {
+        if (act.action === 'click' || act.action === 'submit') {
           el.click();
           filled++;
         } else if (act.action === 'check') {
@@ -682,6 +721,9 @@
           }
           el.dispatchEvent(new Event('input', { bubbles: true }));
           el.dispatchEvent(new Event('change', { bubbles: true }));
+
+          // Trigger jQuery/select2 change if available
+          try { $(el).trigger('change'); } catch(_) {}
           filled++;
         }
       } catch (e) {

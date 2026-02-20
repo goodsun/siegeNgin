@@ -330,8 +330,15 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path.startswith('/api/response'):
-            # Response polling doesn't require auth — it just reads/consumes response.json
-            self.handle_response()
+            # Response polling requires valid session token (actions could be in response)
+            token = self.headers.get('X-SiegeNgin-Token', '')
+            if token and validate_session_token(token):
+                self.handle_response()
+            elif not token:
+                # No token = legacy/initial poll, return response without actions
+                self.handle_response(strip_actions=True)
+            else:
+                self.send_json(401, {'error': 'unauthorized'})
         else:
             self.send_json(404, {'error': 'not found'})
 
@@ -436,13 +443,15 @@ class SiegeHandler(http.server.BaseHTTPRequestHandler):
             self.send_json(500, {'error': 'internal error'})
             return None
 
-    def handle_response(self):
+    def handle_response(self, strip_actions=False):
         filepath = os.path.join(DATA_DIR, 'response.json')
         if os.path.exists(filepath):
             try:
                 with open(filepath) as f:
                     data = json.load(f)
                 os.remove(filepath)  # consume once
+                if strip_actions and 'actions' in data:
+                    del data['actions']  # Don't expose actions without valid session
                 self.send_json(200, data)
             except:
                 self.send_json(500, {'error': 'internal error'})
