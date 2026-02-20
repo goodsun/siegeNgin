@@ -369,6 +369,10 @@
     panelAction = true;
     setTimeout(() => panelAction = false, 100);
     if (!selectedEl) { showSpeech('要素を選択してね'); return; }
+    await sendPointData();
+  };
+
+  async function sendPointData(otpToken = null) {
     const ei = getElementInfo(selectedEl);
     const comment = document.getElementById('sn-comment').value.trim();
     const data = {
@@ -381,32 +385,263 @@
       attributes: ei.attributes,
     };
     try {
-      // Flush old response
-      chrome.runtime.sendMessage({ type: 'api', method: 'GET', endpoint: '/api/response' }).catch(() => {});
+      // Flush old response (await to avoid race conditions)
+      try { await chrome.runtime.sendMessage({ type: 'api', method: 'GET', endpoint: '/api/response' }); } catch(e) {}
       showSpeech('送信中... 🏰');
-      const resp = await chrome.runtime.sendMessage({
+      
+      const apiMsg = {
         type: 'api',
         method: 'POST',
         endpoint: '/api/point',
         body: data,
-      });
+      };
+      if (otpToken) {
+        apiMsg.otpToken = otpToken;
+      }
+
+      const resp = await chrome.runtime.sendMessage(apiMsg);
+      
+      console.log('[siegeNgin] resp:', JSON.stringify(resp));
+      
       if (resp.error) {
         showSpeech('送信失敗: ' + resp.error);
         return;
       }
+      
+      if (resp.status === 401 || (resp.data && resp.data.otp_generated)) {
+        // OTP was generated, show input dialog
+        showOTPDialog(data);
+        return;
+      }
+      
+      if (resp.status === 423) {
+        showSpeech('🔒 アカウントがロックされています');
+        return;
+      }
+      
       if (resp.data && resp.data.ok) {
         document.getElementById('sn-comment').value = '';
         showSpeech(resp.data.message || '届けました🏰');
         pollForResponse();
-      } else if (resp.status === 403) {
-        showSpeech('🔒 認証が必要です');
       } else {
         showSpeech('送信失敗: ' + (resp.data?.error || 'unknown'));
       }
     } catch (e) {
       showSpeech('送信失敗: ' + e.message);
     }
-  };
+  }
+
+  function showOTPDialog(originalData) {
+    // Create OTP input dialog
+    const overlay = document.createElement('div');
+    overlay.id = 'sn-otp-overlay';
+    overlay.innerHTML = `
+      <div id="sn-otp-dialog">
+        <div id="sn-otp-header">
+          <h3>🏰 siegeNgin 通行証</h3>
+        </div>
+        <div id="sn-otp-content">
+          <p>Telegramで受け取った6文字の通行証を入力してください：</p>
+          <input type="text" id="sn-otp-input" placeholder="例: A7X92K" maxlength="6" style="text-transform: uppercase;">
+          <div id="sn-otp-buttons">
+            <button id="sn-otp-cancel">キャンセル</button>
+            <button id="sn-otp-submit">送信</button>
+          </div>
+          <div id="sn-otp-message"></div>
+        </div>
+      </div>
+    `;
+    
+    // Add styles for the OTP dialog
+    const style = document.createElement('style');
+    style.textContent = `
+      #sn-otp-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 100001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+      #sn-otp-dialog {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        width: 300px;
+        max-width: 90vw;
+      }
+      #sn-otp-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #eee;
+      }
+      #sn-otp-header h3 {
+        margin: 0;
+        font-size: 16px;
+        color: #333;
+      }
+      #sn-otp-content {
+        padding: 20px;
+      }
+      #sn-otp-content p {
+        margin: 0 0 16px 0;
+        color: #666;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      #sn-otp-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 2px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+        text-align: center;
+        letter-spacing: 4px;
+        margin-bottom: 16px;
+        box-sizing: border-box;
+      }
+      #sn-otp-input:focus {
+        outline: none;
+        border-color: #4a90e2;
+      }
+      #sn-otp-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+      #sn-otp-buttons button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      #sn-otp-cancel {
+        background: #f5f5f5;
+        color: #666;
+      }
+      #sn-otp-cancel:hover {
+        background: #e8e8e8;
+      }
+      #sn-otp-submit {
+        background: #4a90e2;
+        color: white;
+      }
+      #sn-otp-submit:hover {
+        background: #357abd;
+      }
+      #sn-otp-submit:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+      #sn-otp-message {
+        margin-top: 12px;
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 13px;
+        display: none;
+      }
+      #sn-otp-message.error {
+        background: #fee;
+        color: #c33;
+        border: 1px solid #fcc;
+      }
+      #sn-otp-message.success {
+        background: #efe;
+        color: #363;
+        border: 1px solid #cfc;
+      }
+    `;
+    
+    document.head.appendChild(style);
+    document.body.appendChild(overlay);
+    
+    const otpInput = document.getElementById('sn-otp-input');
+    const submitBtn = document.getElementById('sn-otp-submit');
+    const cancelBtn = document.getElementById('sn-otp-cancel');
+    const messageDiv = document.getElementById('sn-otp-message');
+    
+    // Auto-focus and auto-uppercase
+    otpInput.focus();
+    otpInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+    
+    // Submit on Enter
+    otpInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        submitBtn.click();
+      }
+    });
+    
+    // Cancel button
+    cancelBtn.onclick = () => {
+      document.body.removeChild(overlay);
+      document.head.removeChild(style);
+      showSpeech('送信をキャンセルしました');
+    };
+    
+    // Submit button
+    submitBtn.onclick = async () => {
+      const otp = otpInput.value.trim();
+      if (otp.length !== 6) {
+        showOTPMessage('6文字の通行証を入力してください', 'error');
+        return;
+      }
+      
+      submitBtn.disabled = true;
+      submitBtn.textContent = '送信中...';
+      
+      try {
+        const apiMsg = {
+          type: 'api',
+          method: 'POST',
+          endpoint: '/api/point',
+          body: originalData,
+          otpToken: otp
+        };
+
+        const resp = await chrome.runtime.sendMessage(apiMsg);
+        
+        if (resp.status === 200 && resp.data && resp.data.ok) {
+          showOTPMessage('認証成功！送信しました', 'success');
+          setTimeout(() => {
+            document.body.removeChild(overlay);
+            document.head.removeChild(style);
+            document.getElementById('sn-comment').value = '';
+            showSpeech(resp.data.message || '届けました🏰');
+            pollForResponse();
+          }, 1000);
+        } else if (resp.status === 401) {
+          showOTPMessage('通行証が無効または期限切れです', 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '送信';
+          otpInput.focus();
+          otpInput.select();
+        } else if (resp.status === 423) {
+          showOTPMessage('アカウントがロックされています', 'error');
+        } else {
+          showOTPMessage('送信に失敗しました: ' + (resp.data?.error || 'unknown'), 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '送信';
+        }
+      } catch (e) {
+        showOTPMessage('送信に失敗しました: ' + e.message, 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '送信';
+      }
+    };
+    
+    function showOTPMessage(msg, type) {
+      messageDiv.textContent = msg;
+      messageDiv.className = type;
+      messageDiv.style.display = 'block';
+    }
+  }
 
   // --- Speech bubble ---
   function showSpeech(msg) {

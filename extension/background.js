@@ -23,11 +23,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 async function handleAPI(msg) {
-  const { method, endpoint, body } = msg;
+  const { method, endpoint, body, otpToken } = msg;
   const url = `${API_BASE}${endpoint}`;
 
-  // Get token from storage
-  const { sn_token } = await chrome.storage.local.get('sn_token');
+  // Get session token from storage, or use provided OTP token
+  let token = otpToken;
+  if (!token) {
+    const { sn_session_token } = await chrome.storage.local.get('sn_session_token');
+    token = sn_session_token;
+  }
 
   const opts = {
     method: method || 'GET',
@@ -36,8 +40,8 @@ async function handleAPI(msg) {
     },
   };
 
-  if (sn_token) {
-    opts.headers['X-SiegeNgin-Token'] = sn_token;
+  if (token) {
+    opts.headers['X-SiegeNgin-Token'] = token;
   }
 
   if (body) {
@@ -46,5 +50,18 @@ async function handleAPI(msg) {
 
   const resp = await fetch(url, opts);
   const data = resp.status === 204 ? {} : await resp.json();
+  
+  // Handle session token from successful OTP authentication
+  if (resp.status === 200 && data.session_token) {
+    await chrome.storage.local.set({ sn_session_token: data.session_token });
+    console.log('[siegeNgin] Session token saved');
+  }
+
+  // Handle 401 responses (clear invalid session token)
+  if (resp.status === 401) {
+    await chrome.storage.local.remove('sn_session_token');
+    console.log('[siegeNgin] Session token cleared due to 401');
+  }
+
   return { status: resp.status, data };
 }
