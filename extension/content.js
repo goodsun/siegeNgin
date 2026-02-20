@@ -310,7 +310,7 @@
   // --- Block hover/click on panel ---
   panel.addEventListener('mouseover', (e) => e.stopPropagation(), true);
   panel.addEventListener('mouseout', (e) => e.stopPropagation(), true);
-  panel.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); }, true);
+  panel.addEventListener('click', (e) => { e.stopPropagation(); }, true);
 
   // --- Hover (named for cleanup) ---
   function onHover(e) {
