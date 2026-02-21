@@ -183,6 +183,39 @@ $$I(Z; P | X) = H(Z | X) - H(Z | X, P) = \Delta H$$
 
 すなわち、ポインティングは言語入力では伝達しきれない参照情報を補完する**予測誤差圧縮チャネル**として機能する。
 
+以下の図は、ポインティングによる確率分布の変化を視覚化したものである：
+
+```mermaid
+graph LR
+    subgraph "言語のみ: H(Z|X) = 高"
+        direction TB
+        X1["入力: 'ボタンを赤くして'"]
+        X1 --> D1["候補1: ヘッダーボタン ■■■■"]
+        X1 --> D2["候補2: サイドバーボタン ■■■"]
+        X1 --> D3["候補3: フッターボタン ■■"]
+        X1 --> D4["候補4: モーダルボタン ■"]
+        style D1 fill:#e74c3c,color:#fff
+        style D2 fill:#e67e22,color:#fff
+        style D3 fill:#f39c12,color:#fff
+        style D4 fill:#f1c40f,color:#000
+    end
+
+    subgraph "ポインティング付き: H(Z|X,P) ≈ 0"
+        direction TB
+        X2["入力: 'ボタンを赤くして' + 👆pointing"]
+        X2 --> D5["候補1: ヘッダーボタン ■■■■■■■■"]
+        X2 -.-> D6["候補2: ×"]
+        X2 -.-> D7["候補3: ×"]
+        X2 -.-> D8["候補4: ×"]
+        style D5 fill:#27ae60,color:#fff
+        style D6 fill:#555,color:#999
+        style D7 fill:#555,color:#999
+        style D8 fill:#555,color:#999
+    end
+```
+
+**Figure 6: ポインティングによる予測誤差圧縮の視覚化** — 左：言語のみの場合、潜在変数Zの事後分布は多峰的で高エントロピー。右：ポインティング付加により分布が単峰的に拘束され、エントロピーがほぼゼロに収束する（entropy collapse）。バーの長さは各候補の事後確率を示す。
+
 CPC の枠組みにおいて、この圧縮は集団的自由エネルギー $F$ の最小化に直接寄与する。人間とAIの結合系全体の自由エネルギーは：
 
 $$F_{total} = F_{human} + F_{AI} + F_{interaction}$$
