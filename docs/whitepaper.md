@@ -1,5 +1,9 @@
 # siegeNgin from the Perspective of Symbol Emergence Systems Theory: Symbol Emergence between Humans and AI through Pointing Acts
 
+**Chikara Kawashima**
+Independent Researcher
+ORCID: [0009-0008-9457-0181](https://orcid.org/0009-0008-9457-0181)
+
 ## Abstract
 
 This paper theoretically analyzes siegeNgin, a novel human-computer interaction system that integrates Chrome extensions with AI collaboration, from the perspective of symbol emergence systems theory. The "pointing act" in siegeNgin functions not merely as a technical input method, but as an innovative mechanism that serves as a practical solution to the symbol grounding problem and promotes symbol emergence between humans and AI. This study employs symbol emergence robotics by Tadahiro Taniguchi, Wittgenstein's language game theory, and Gibson's affordance theory as theoretical foundations to examine the "decentralization of symbol emergence" realized by siegeNgin. In particular, we discuss how direct pointing acts toward DOM elements endow abstract HTML structures with meaning, enabling direct meaning generation that does not depend on technical authority. Furthermore, through theoretical connections with Husserlian phenomenology and Gadamerian hermeneutics, detailed analysis of security architecture, and presentation of quantitative evaluation data, we demonstrate the interdisciplinary validity of this theory. Additionally, we introduce the Collective Predictive Coding (CPC) hypothesis proposed by Taniguchi et al. as a framework, showing that the symbol emergence process between humans and AI in siegeNgin can be described as a collective extension of predictive coding.
