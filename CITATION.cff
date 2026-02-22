@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "siegeNgin: AI-Collaborative Chat and Pointing UI for Authenticated Web Systems"
+authors:
+  - family-names: Kawashima
+    given-names: Chikara
+    orcid: "https://orcid.org/0009-0008-9457-0181"
+repository-code: "https://github.com/goodsun/siegeNgin"
+license: MIT
+version: "1.0.0"
+date-released: "2026-02-22"
+keywords:
+  - AI assistant
+  - browser extension
+  - web automation
+  - human-AI collaboration
+  - authenticated systems
+abstract: >-
+  siegeNgin is an AI-collaborative tool providing chat and pointing UI
+  (whiteboard) for interacting with authenticated web systems. Features
+  Chrome extension for DOM element selection, OTP-based authentication,
+  and Google Sheets API integration for automated data pipelines.
